@@ -1,5 +1,12 @@
 import axios from "axios";
 
+// Helper function to sanitize error messages (remove API key)
+const sanitizeError = (error) => {
+  const message = error.response?.data?.error?.message || error.message || "AI request failed";
+  // Remove any API key from error messages
+  return message.replace(/key=[A-Za-z0-9_-]+/gi, 'key=***HIDDEN***');
+};
+
 // Generate content using Gemini API - returns raw response
 export const generateContent = async (prompt) => {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -8,21 +15,26 @@ export const generateContent = async (prompt) => {
   
   const url = `${baseUrl}/models/${model}:generateContent?key=${apiKey}`;
   
-  const response = await axios.post(
-    url,
-    {
-      contents: [
-        {
-          parts: [{ text: prompt }]
-        }
-      ]
-    },
-    {
-      headers: { "Content-Type": "application/json" }
-    }
-  );
-  
-  return response.data;
+  try {
+    const response = await axios.post(
+      url,
+      {
+        contents: [
+          {
+            parts: [{ text: prompt }]
+          }
+        ]
+      },
+      {
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    const sanitizedMessage = sanitizeError(error);
+    throw new Error(sanitizedMessage);
+  }
 };
 
 // Generate text content using Gemini API - returns just the text
@@ -39,28 +51,33 @@ export const generateContentWithImage = async (prompt, base64Image, mimeType) =>
   
   const url = `${baseUrl}/models/${model}:generateContent?key=${apiKey}`;
   
-  const response = await axios.post(
-    url,
-    {
-      contents: [
-        {
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType: mimeType,
-                data: base64Image
+  try {
+    const response = await axios.post(
+      url,
+      {
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inlineData: {
+                  mimeType: mimeType,
+                  data: base64Image
+                }
               }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      headers: { "Content-Type": "application/json" }
-    }
-  );
-  
-  return response.data.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis available";
+            ]
+          }
+        ]
+      },
+      {
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+    
+    return response.data.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis available";
+  } catch (error) {
+    const sanitizedMessage = sanitizeError(error);
+    throw new Error(sanitizedMessage);
+  }
 };
 

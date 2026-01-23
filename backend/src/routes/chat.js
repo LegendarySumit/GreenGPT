@@ -165,10 +165,14 @@ Provide a helpful, detailed response:`;
       reply: reply
     });
   } catch (error) {
-    console.error('Chat error:', error);
+    console.error('Chat error:', error.message);
+    // Sanitize error message to prevent API key leaks
+    let errorMessage = error.message || 'Failed to process message';
+    errorMessage = errorMessage.replace(/key=[A-Za-z0-9_-]+/gi, 'key=***HIDDEN***');
+    
     res.status(500).json({ 
       error: 'Failed to process message',
-      details: error.message 
+      details: errorMessage 
     });
   }
 });

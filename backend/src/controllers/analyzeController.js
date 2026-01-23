@@ -31,10 +31,14 @@ export const analyzeDocument = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("GEMINI ERROR:", error);
+    console.error("GEMINI ERROR:", error.message);
+    // Sanitize error message to remove any potential API key leaks
+    let errorMessage = error.message || "AI analysis failed";
+    errorMessage = errorMessage.replace(/key=[A-Za-z0-9_-]+/gi, 'key=***HIDDEN***');
+    
     res.status(500).json({
       success: false,
-      error: error.response?.data?.error?.message || error.message || "AI analysis failed"
+      error: errorMessage
     });
   }
 };

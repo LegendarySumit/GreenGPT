@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import { useEffect } from "react";
 import { ThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
+import { AnalysisProvider } from "./context/AnalysisContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -71,9 +72,11 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <AnalysisProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </AnalysisProvider>
       </AuthProvider>
     </ThemeProvider>
   );

@@ -2,24 +2,59 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 
-export default function ChatPage() {
-  const [chatSessions, setChatSessions] = useState([
-    {
-      id: 1,
-      title: "New Chat",
-      messages: [
-        {
-          role: "assistant",
-          content: "👋 Hi! I'm GreenGPT, your AI environmental assistant. I can help you analyze documents, answer questions about pollution data, and provide environmental insights. Try asking me something!",
-          timestamp: new Date()
-        }
-      ],
-      createdAt: new Date(),
-      updatedAt: new Date()
+// Get initial chat sessions from localStorage synchronously
+const getStoredChatSessions = () => {
+  try {
+    const saved = localStorage.getItem('chatSessions');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.map(s => ({
+        ...s,
+        createdAt: new Date(s.createdAt),
+        updatedAt: new Date(s.updatedAt),
+        messages: s.messages.map(m => ({
+          ...m,
+          timestamp: new Date(m.timestamp)
+        }))
+      }));
     }
-  ]);
+  } catch (e) {
+    console.error("Failed to load chat history:", e);
+  }
+  return [{
+    id: 1,
+    title: "New Chat",
+    messages: [
+      {
+        role: "assistant",
+        content: "👋 Hi! I'm GreenGPT, your AI environmental assistant. I can help you analyze documents, answer questions about pollution data, and provide environmental insights. Try asking me something!",
+        timestamp: new Date()
+      }
+    ],
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }];
+};
+
+// Get initial session ID
+const getStoredSessionId = () => {
+  try {
+    const saved = localStorage.getItem('currentChatSessionId');
+    if (saved) {
+      return parseInt(saved, 10);
+    }
+  } catch (e) {}
+  return 1;
+};
+
+export default function ChatPage() {
+  const storedSessions = getStoredChatSessions();
+  const storedSessionId = getStoredSessionId();
   
-  const [currentSessionId, setCurrentSessionId] = useState(1);
+  const [chatSessions, setChatSessions] = useState(storedSessions);
+  const [currentSessionId, setCurrentSessionId] = useState(
+    storedSessions.find(s => s.id === storedSessionId) ? storedSessionId : storedSessions[0]?.id || 1
+  );
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -47,26 +82,10 @@ export default function ChatPage() {
     localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
   }, [chatSessions]);
 
-  // Load from localStorage
+  // Save current session ID to localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('chatSessions');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setChatSessions(parsed.map(s => ({
-          ...s,
-          createdAt: new Date(s.createdAt),
-          updatedAt: new Date(s.updatedAt),
-          messages: s.messages.map(m => ({
-            ...m,
-            timestamp: new Date(m.timestamp)
-          }))
-        })));
-      } catch (e) {
-        console.error("Failed to load chat history:", e);
-      }
-    }
-  }, []);
+    localStorage.setItem('currentChatSessionId', currentSessionId.toString());
+  }, [currentSessionId]);
 
   // Create new chat session
   const createNewChat = () => {
@@ -252,6 +271,12 @@ export default function ChatPage() {
       timestamp: new Date()
     };
 
+    // Check if this is the first user message (only assistant greeting exists)
+    const isFirstUserMessage = currentSession?.messages?.filter(m => m.role === "user").length === 0;
+    const newTitle = isFirstUserMessage && currentSession?.title === "New Chat"
+      ? inputMessage.slice(0, 35) + (inputMessage.length > 35 ? "..." : "")
+      : null;
+
     // Add message to current session
     setChatSessions(prevSessions => prevSessions.map(s => 
       s.id === currentSessionId 
@@ -260,9 +285,7 @@ export default function ChatPage() {
             messages: [...s.messages, userMessage],
             updatedAt: new Date(),
             // Auto-title from first user message
-            title: s.messages.length === 1 && s.title === "New Chat" 
-              ? inputMessage.slice(0, 30) + (inputMessage.length > 30 ? "..." : "")
-              : s.title
+            title: newTitle || s.title
           }
         : s
     ));
@@ -478,16 +501,6 @@ export default function ChatPage() {
             className="shrink-0 p-1.5 xs:p-2 sm:p-3 md:p-4 border-b border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-3 min-w-0">
-              {/* Sidebar Toggle */}
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-1 xs:p-1.5 sm:p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
-              >
-                <svg className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-
               <div className="flex-1 min-w-0">
                 <h1 className="text-xs xs:text-sm sm:text-lg font-bold text-gray-900 dark:text-white truncate">{currentSession?.title || "New Chat"}</h1>
                 <p className="text-[9px] xs:text-[10px] sm:text-xs text-gray-500 hidden xs:block">AI Environmental Assistant</p>

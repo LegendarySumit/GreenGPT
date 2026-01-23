@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
 import UploadBox from "../components/UploadBox";
+import { useAnalysis } from "../context/AnalysisContext";
 
 export default function AnalyzePage() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { saveAnalysis } = useAnalysis();
 
   const handleAnalyze = async () => {
     if (!file) return;
@@ -29,8 +31,9 @@ export default function AnalyzePage() {
           },
         }
       );
-      // Navigate to results page with data
-      navigate("/results", { state: { result: res.data.analysis, fileName: file.name } });
+      // Save to context and navigate to results page
+      saveAnalysis(res.data.analysis, file.name);
+      navigate("/results");
     } catch (err) {
       setError(err.response?.data?.error || "Analysis failed. Please try again.");
       console.error("Analysis error:", err);
