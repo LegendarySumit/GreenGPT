@@ -353,18 +353,18 @@ export default function ChatPage() {
       {/* Sidebar - Clean Gemini style */}
       <motion.div
         initial={false}
-        animate={{ width: sidebarOpen ? 280 : 56 }}
+        animate={{ width: sidebarOpen ? 260 : 44 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
         className="shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col transition-colors duration-300"
       >
         {/* Single row with Hamburger and New Chat */}
-        <div className="shrink-0 p-2 xs:p-2.5 sm:p-3 flex items-center gap-1 xs:gap-1.5 sm:gap-2">
+        <div className={`shrink-0 p-1.5 xs:p-2 sm:p-3 flex items-center gap-1 xs:gap-1.5 sm:gap-2 ${!sidebarOpen ? 'justify-center' : ''}`}>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="shrink-0 p-1.5 xs:p-2 sm:p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="shrink-0 w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
           >
-            <svg className="w-4 h-4 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 xs:w-[18px] xs:h-[18px] sm:w-5 sm:h-5 text-gray-700 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
@@ -372,9 +372,9 @@ export default function ChatPage() {
           {sidebarOpen && (
             <button
               onClick={createNewChat}
-              className="flex-1 px-2 xs:px-2.5 sm:px-3 py-1.5 xs:py-1.5 sm:py-2 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2 text-xs xs:text-xs sm:text-sm"
+              className="flex-1 px-1.5 xs:px-2 sm:px-3 py-1 xs:py-1.5 sm:py-2 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2 text-[10px] xs:text-xs sm:text-sm"
             >
-              <svg className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-2.5 h-2.5 xs:w-3 xs:h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               <span className="hidden xs:inline">New</span>
@@ -475,33 +475,33 @@ export default function ChatPage() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="shrink-0 p-2 xs:p-2.5 sm:p-3 md:p-4 border-b border-gray-200 dark:border-gray-700"
+            className="shrink-0 p-1.5 xs:p-2 sm:p-3 md:p-4 border-b border-gray-200 dark:border-gray-700"
           >
-            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 min-w-0">
+            <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-3 min-w-0">
               {/* Sidebar Toggle */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-1.5 xs:p-2 sm:p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
+                className="p-1 xs:p-1.5 sm:p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
               >
-                <svg className="w-4 h-4 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
 
               <div className="flex-1 min-w-0">
-                <h1 className="text-sm xs:text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">{currentSession?.title || "New Chat"}</h1>
-                <p className="text-xs text-gray-500 hidden xs:block">AI Environmental Assistant</p>
+                <h1 className="text-xs xs:text-sm sm:text-lg font-bold text-gray-900 dark:text-white truncate">{currentSession?.title || "New Chat"}</h1>
+                <p className="text-[9px] xs:text-[10px] sm:text-xs text-gray-500 hidden xs:block">AI Environmental Assistant</p>
               </div>
 
               {/* Uploaded Files Badges */}
               {uploadedFiles.length > 0 && (
-                <div className="flex gap-1 xs:gap-1.5 flex-wrap justify-end flex-shrink-0 max-w-[45%]">
+                <div className="flex gap-0.5 xs:gap-1 flex-wrap justify-end flex-shrink-0 max-w-[40%]">
                   {uploadedFiles.map((file, idx) => (
-                    <div key={idx} className="bg-[#1f7a63]/10 border border-[#1f7a63]/30 rounded px-2 xs:px-2.5 sm:px-3 py-0.5 sm:py-1 flex items-center gap-1">
-                      <svg className="w-2.5 h-2.5 xs:w-3 xs:h-3 text-[#1f7a63] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div key={idx} className="bg-[#1f7a63]/10 border border-[#1f7a63]/30 rounded px-1 xs:px-2 sm:px-3 py-0.5 flex items-center gap-0.5 xs:gap-1">
+                      <svg className="w-2 h-2 xs:w-2.5 xs:h-2.5 sm:w-3 sm:h-3 text-[#1f7a63] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <span className="text-xs text-[#1f7a63] font-medium truncate max-w-[60px] xs:max-w-none">{file.name}</span>
+                      <span className="text-[9px] xs:text-[10px] sm:text-xs text-[#1f7a63] font-medium truncate max-w-[40px] xs:max-w-[60px] sm:max-w-none">{file.name}</span>
                     </div>
                   ))}
                 </div>
@@ -512,30 +512,30 @@ export default function ChatPage() {
 
         {/* Welcome State - Perfectly centered, no scroll */}
         {messages.length === 1 && (
-          <div className="flex-1 flex flex-col items-center justify-center px-3 xs:px-4 sm:px-6 -mt-6 xs:-mt-8 sm:-mt-8">
+          <div className="flex-1 flex flex-col items-center justify-center px-2 xs:px-3 sm:px-6 -mt-4 xs:-mt-6 sm:-mt-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center mb-3 xs:mb-4 sm:mb-4"
+              className="text-center mb-2 xs:mb-3 sm:mb-4"
             >
-              <div className="flex items-center justify-center gap-1.5 xs:gap-2 mb-1 xs:mb-1.5">
-                <div className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 xs:w-5 xs:h-5 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2 mb-1 xs:mb-1.5">
+                <div className="w-7 h-7 xs:w-9 xs:h-9 sm:w-12 sm:h-12 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg className="w-3.5 h-3.5 xs:w-[18px] xs:h-[18px] sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] bg-clip-text text-transparent">
+                <h1 className="text-xl xs:text-2xl sm:text-4xl font-bold bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] bg-clip-text text-transparent">
                   GreenGPT
                 </h1>
               </div>
-              <p className="text-xs xs:text-base sm:text-lg md:text-xl font-medium text-gray-700 dark:text-gray-300 px-2">
+              <p className="text-[10px] xs:text-sm sm:text-lg md:text-xl font-medium text-gray-700 dark:text-gray-300 px-1">
                 How can I help you today?
               </p>
             </motion.div>
 
-            {/* Prompt Suggestions - Responsive grid */}
-            <div className="w-full max-w-3xl">
-              <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 xs:gap-2.5 sm:gap-3 px-1">
+            {/* Prompt Suggestions - 2x2 Grid */}
+            <div className="w-full max-w-3xl px-1 xs:px-2">
+              <div className="grid grid-cols-2 gap-1.5 xs:gap-2 sm:gap-3">
                 {suggestedPrompts.map((prompt, idx) => (
                   <motion.button
                     key={idx}
@@ -543,19 +543,19 @@ export default function ChatPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.1 }}
                     onClick={() => setInputMessage(prompt.title)}
-                    className="p-2 xs:p-3 sm:p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg xs:rounded-xl sm:rounded-2xl hover:border-[#1f7a63] dark:hover:border-[#2dd4a1] hover:shadow-xl transition-all text-left group active:scale-95"
+                    className="p-1.5 xs:p-2.5 sm:p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg xs:rounded-xl sm:rounded-2xl hover:border-[#1f7a63] dark:hover:border-[#2dd4a1] hover:shadow-xl transition-all text-left group active:scale-95"
                   >
-                    <div className="flex items-start gap-1.5 xs:gap-2 sm:gap-2.5">
-                      <div className={`shrink-0 w-8 h-8 xs:w-10 xs:h-10 sm:w-14 sm:h-14 bg-gradient-to-br ${prompt.color} rounded-lg xs:rounded-lg sm:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                        <svg className="w-4 h-4 xs:w-5 xs:h-5 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex flex-col xs:flex-row items-center xs:items-start gap-1 xs:gap-2 sm:gap-2.5">
+                      <div className={`shrink-0 w-6 h-6 xs:w-8 xs:h-8 sm:w-12 sm:h-12 bg-gradient-to-br ${prompt.color} rounded-md xs:rounded-lg sm:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                        <svg className="w-3 h-3 xs:w-4 xs:h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={prompt.iconPath} />
                         </svg>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-xs xs:text-sm sm:text-sm font-semibold text-gray-900 dark:text-white mb-0.5 xs:mb-1 group-hover:text-[#1f7a63] dark:group-hover:text-[#2dd4a1] transition-colors leading-tight">
+                      <div className="flex-1 min-w-0 text-center xs:text-left">
+                        <h3 className="text-[10px] xs:text-xs sm:text-sm font-semibold text-gray-900 dark:text-white mb-0 xs:mb-0.5 group-hover:text-[#1f7a63] dark:group-hover:text-[#2dd4a1] transition-colors leading-tight line-clamp-2">
                           {prompt.title}
                         </h3>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-tight hidden xs:block sm:block">
+                        <p className="text-[9px] xs:text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 leading-tight hidden xs:block line-clamp-2">
                           {prompt.description}
                         </p>
                       </div>
@@ -569,7 +569,7 @@ export default function ChatPage() {
 
         {/* Messages Area - Only show when messages exist */}
         {messages.length > 1 && (
-          <div className="flex-1 overflow-y-auto px-2 xs:px-3 sm:px-6 py-3 xs:py-4 sm:py-6 space-y-2 xs:space-y-3 sm:space-y-4 scrollbar-hide">
+          <div className="flex-1 overflow-y-auto px-1.5 xs:px-2 sm:px-6 py-2 xs:py-3 sm:py-6 space-y-1.5 xs:space-y-2 sm:space-y-4 scrollbar-hide">
             <AnimatePresence>
               {messages.map((message, idx) => (
                 <motion.div
@@ -579,17 +579,17 @@ export default function ChatPage() {
                   exit={{ opacity: 0 }}
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  <div className={`max-w-[95%] xs:max-w-[90%] sm:max-w-2xl ${message.role === "user" ? "bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] text-white" : message.role === "system" ? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-center w-full" : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"} rounded-lg xs:rounded-xl sm:rounded-2xl px-2.5 xs:px-3.5 sm:px-4 py-2 xs:py-2.5 sm:py-3 shadow-md transition-colors duration-300`}>
+                  <div className={`max-w-[95%] xs:max-w-[90%] sm:max-w-2xl ${message.role === "user" ? "bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] text-white" : message.role === "system" ? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-center w-full" : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"} rounded-lg xs:rounded-xl sm:rounded-2xl px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-3 shadow-md transition-colors duration-300`}>
                     {message.role === "assistant" && (
-                      <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2 mb-1 xs:mb-1.5 sm:mb-2">
-                        <div className="w-4 h-4 xs:w-4 xs:h-4 sm:w-5 sm:h-5 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-xs font-bold">AI</span>
+                      <div className="flex items-center gap-0.5 xs:gap-1 sm:gap-2 mb-0.5 xs:mb-1 sm:mb-2">
+                        <div className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-white text-[8px] xs:text-[9px] sm:text-xs font-bold">AI</span>
                         </div>
-                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 hidden xs:inline">GreenGPT</span>
+                        <span className="text-[9px] xs:text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 hidden xs:inline">GreenGPT</span>
                       </div>
                     )}
-                    <p className="whitespace-pre-wrap leading-relaxed text-xs xs:text-sm sm:text-sm break-words">{message.content}</p>
-                    <span className="text-xs opacity-60 mt-0.5 xs:mt-1 sm:mt-1 block">
+                    <p className="whitespace-pre-wrap leading-relaxed text-[10px] xs:text-xs sm:text-sm break-words">{message.content}</p>
+                    <span className="text-[8px] xs:text-[9px] sm:text-xs opacity-60 mt-0.5 block">
                       {message.timestamp.toLocaleTimeString()}
                     </span>
                   </div>
@@ -603,11 +603,11 @@ export default function ChatPage() {
                 animate={{ opacity: 1 }}
                 className="flex justify-start"
               >
-                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg xs:rounded-xl sm:rounded-2xl px-2.5 xs:px-3.5 sm:px-4 py-2 xs:py-2.5 sm:py-3 shadow-md transition-colors duration-300">
-                  <div className="flex items-center gap-1.5 xs:gap-2">
-                    <div className="w-1.5 h-1.5 xs:w-2 xs:h-2 bg-[#1f7a63] rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                    <div className="w-1.5 h-1.5 xs:w-2 xs:h-2 bg-[#1f7a63] rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                    <div className="w-1.5 h-1.5 xs:w-2 xs:h-2 bg-[#1f7a63] rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg xs:rounded-xl sm:rounded-2xl px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-3 shadow-md transition-colors duration-300">
+                  <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2">
+                    <div className="w-1 h-1 xs:w-1.5 xs:h-1.5 sm:w-2 sm:h-2 bg-[#1f7a63] rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                    <div className="w-1 h-1 xs:w-1.5 xs:h-1.5 sm:w-2 sm:h-2 bg-[#1f7a63] rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                    <div className="w-1 h-1 xs:w-1.5 xs:h-1.5 sm:w-2 sm:h-2 bg-[#1f7a63] rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
                   </div>
                 </div>
               </motion.div>
@@ -617,9 +617,9 @@ export default function ChatPage() {
           </div>
         )}
 
-        {/* Input Area - Fixed at bottom, properly aligned */}
-        <div className="shrink-0 bg-white dark:bg-gray-900 transition-colors duration-300 -mt-12 xs:-mt-16 sm:-mt-20 mb-3 xs:mb-4 sm:mb-5">
-          <div className="max-w-4xl mx-auto px-2 xs:px-3 sm:px-6 py-2.5 xs:py-3 sm:py-4">
+        {/* Input Area - ChatGPT style */}
+        <div className="shrink-0 bg-white dark:bg-gray-900 transition-colors duration-300 -mt-10 xs:-mt-14 sm:-mt-20 mb-2 xs:mb-3 sm:mb-4">
+          <div className="max-w-3xl mx-auto px-2 xs:px-3 sm:px-4">
             <div className="relative">
               {/* Hidden file input */}
               <input
@@ -631,17 +631,17 @@ export default function ChatPage() {
                 className="hidden"
               />
 
-              {/* Main input container */}
-              <div className="flex items-center gap-1.5 xs:gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl xs:rounded-2xl sm:rounded-3xl px-2 xs:px-2.5 sm:px-3 py-1.5 xs:py-2 sm:py-2 focus-within:border-[#1f7a63] dark:focus-within:border-[#2dd4a1] transition-colors shadow-sm">
+              {/* Main input container - ChatGPT style */}
+              <div className="flex items-end gap-1.5 xs:gap-2 sm:gap-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl xs:rounded-2xl sm:rounded-3xl px-2 xs:px-3 sm:px-4 py-2 xs:py-2.5 sm:py-3 focus-within:border-[#1f7a63] dark:focus-within:border-[#2dd4a1] focus-within:ring-1 focus-within:ring-[#1f7a63]/20 dark:focus-within:ring-[#2dd4a1]/20 transition-all shadow-sm hover:shadow-md">
                 {/* File Upload Button */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isLoading}
-                  className="shrink-0 p-1.5 xs:p-1.5 sm:p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 group"
+                  className="shrink-0 w-8 h-8 xs:w-9 xs:h-9 sm:w-10 sm:h-10 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all disabled:opacity-50 group"
                   title="Upload PDF or Image"
                 >
-                  <svg className="w-4 h-4 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300 group-hover:text-[#1f7a63] dark:group-hover:text-[#2dd4a1] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  <svg className="w-5 h-5 xs:w-5 xs:h-5 sm:w-5 sm:h-5 text-gray-500 dark:text-gray-400 group-hover:text-[#1f7a63] dark:group-hover:text-[#2dd4a1] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                   </svg>
                 </button>
 
@@ -659,71 +659,70 @@ export default function ChatPage() {
                       handleSendMessage();
                     }
                   }}
-                  placeholder={isListening ? "Listening..." : messages.length === 1 ? "Ask GreenGPT..." : "Message..."}
+                  placeholder={isListening ? "Listening..." : "Message GreenGPT..."}
                   disabled={isLoading || isListening}
                   rows={1}
-                  className="flex-1 bg-transparent text-xs xs:text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none resize-none max-h-[180px] overflow-y-auto disabled:opacity-50 py-1.5 xs:py-1.5 sm:py-2"
-                  style={{ minHeight: '20px' }}
+                  className="flex-1 bg-transparent text-sm xs:text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none resize-none max-h-[200px] overflow-y-auto disabled:opacity-50 py-1 xs:py-1.5 sm:py-1.5 leading-relaxed"
+                  style={{ minHeight: '24px' }}
                 />
 
-                {/* Voice Input Button */}
-                <button
-                  onClick={handleVoiceInput}
-                  disabled={isLoading}
-                  className={`shrink-0 p-1.5 xs:p-1.5 sm:p-2 rounded-lg transition-colors ${isListening ? "bg-red-500 text-white" : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"} disabled:opacity-50`}
-                  title="Voice input"
-                >
-                  <svg className="w-4 h-4 xs:w-4 xs:h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                  </svg>
-                </button>
+                {/* Voice Input Button - Only show when no text */}
+                {!inputMessage.trim() && (
+                  <button
+                    onClick={handleVoiceInput}
+                    disabled={isLoading}
+                    className={`shrink-0 w-8 h-8 xs:w-9 xs:h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition-all ${isListening ? "bg-red-500 text-white animate-pulse" : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"} disabled:opacity-50`}
+                    title="Voice input"
+                  >
+                    <svg className="w-5 h-5 xs:w-5 xs:h-5 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  </button>
+                )}
 
-                {/* Send Button */}
+                {/* Send Button - ChatGPT style arrow */}
                 {inputMessage.trim() && (
                   <motion.button
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    exit={{ scale: 0 }}
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ duration: 0.15 }}
                     onClick={handleSendMessage}
                     disabled={isLoading}
-                    className="shrink-0 w-7 h-7 xs:w-7 xs:h-7 sm:w-8 sm:h-8 bg-[#1f7a63] hover:bg-[#155744] text-white rounded-full flex items-center justify-center transition-colors disabled:opacity-50 flex-shrink-0"
+                    className="shrink-0 w-8 h-8 xs:w-9 xs:h-9 sm:w-10 sm:h-10 bg-[#1f7a63] hover:bg-[#155744] text-white rounded-xl flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
                   >
-                    <svg className="w-3.5 h-3.5 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                     </svg>
                   </motion.button>
                 )}
               </div>
-
-              {/* Helper text */}
-              {messages.length === 1 && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-1.5 xs:mt-2">
-                  Verify important information
-                </p>
-              )}
             </div>
 
-            {/* Bottom Info Section - Compact */}
-            <div className="max-w-4xl mx-auto px-2 xs:px-3 sm:px-6 pt-3 xs:pt-4 sm:pt-6 pb-2 xs:pb-2 sm:pb-4">
-              <div className="flex items-center justify-center gap-2 xs:gap-3 sm:gap-6 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
-                <div className="flex items-center gap-1">
-                  <svg className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            {/* Footer - Environmental context */}
+            <div className="text-center mt-2 xs:mt-3 sm:mt-4 space-y-1 xs:space-y-1.5 sm:space-y-2">
+              <p className="text-[10px] xs:text-xs sm:text-xs text-gray-400 dark:text-gray-500">
+                GreenGPT can make mistakes. Consider checking important information.
+              </p>
+              <div className="flex items-center justify-center gap-2 xs:gap-3 sm:gap-4 text-[9px] xs:text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">
+                <span className="flex items-center gap-1">
+                  <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>Gemini AI</span>
-                </div>
-                <div className="flex items-center gap-1 hidden xs:flex">
-                  <svg className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  <span>Analyze PDFs</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <span>Secure</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <svg className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                  <span>Upload Images</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
                   </svg>
-                  <span>Voice</span>
-                </div>
+                  <span>Eco Insights</span>
+                </span>
               </div>
             </div>
           </div>

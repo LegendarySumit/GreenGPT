@@ -135,7 +135,6 @@ export default function SignupPage() {
           animate={{ scale: 1, opacity: 1 }}
           whileHover={{ scale: 1.01, y: -5 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
           className="bg-white/10 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 p-8"
         >
           {error && (

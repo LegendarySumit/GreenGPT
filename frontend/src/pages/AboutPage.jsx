@@ -416,9 +416,9 @@ export default function AboutPage() {
 
             <div className="border-t border-gray-200 dark:border-gray-700 pt-8">
               <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-4 text-center">Powered By</h4>
-              <div className="flex flex-wrap justify-center gap-4">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-3 xs:gap-3 sm:gap-4">
                 {["React", "Node.js", "Google Gemini AI", "Tailwind CSS", "Framer Motion", "Express"].map((tech, idx) => (
-                  <span key={idx} className="px-5 py-3 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] text-white rounded-xl font-semibold shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300">
+                  <span key={idx} className="px-4 py-2.5 xs:px-5 xs:py-3 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] text-white rounded-xl font-semibold shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 text-center text-sm xs:text-base">
                     {tech}
                   </span>
                 ))}

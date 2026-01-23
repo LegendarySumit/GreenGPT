@@ -1,10 +1,10 @@
 import express from 'express';
 import multer from 'multer';
 import pdfParse from 'pdf-parse';
-import axios from 'axios';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { generateText, generateContentWithImage } from '../config/gemini.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,33 +32,6 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
 
-// Gemini API helper
-async function callGeminiAPI(prompt) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
-  const baseUrl = "https://generativelanguage.googleapis.com/v1beta";
-  
-  const url = `${baseUrl}/models/${model}:generateContent?key=${apiKey}`;
-  
-  const response = await axios.post(
-    url,
-    {
-      contents: [
-        {
-          parts: [{ text: prompt }]
-        }
-      ]
-    },
-    {
-      headers: { "Content-Type": "application/json" }
-    }
-  );
-  
-  return response.data.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
-}
-
-// Initialize Gemini AI
-
 // Extract text from PDF
 async function extractTextFromPDF(filePath) {
   try {
@@ -77,37 +50,8 @@ async function extractTextFromImage(filePath, mimeType) {
     const imageData = await fs.readFile(filePath);
     const base64Image = imageData.toString('base64');
     
-    const apiKey = process.env.GEMINI_API_KEY;
-    const model = "gemini-1.5-flash";
-    const baseUrl = "https://generativelanguage.googleapis.com/v1beta";
-    
-    const url = `${baseUrl}/models/${model}:generateContent?key=${apiKey}`;
-    
-    const response = await axios.post(
-      url,
-      {
-        contents: [
-          {
-            parts: [
-              {
-                text: "Analyze this image for environmental concerns. Identify any pollution, violations, or environmental issues visible. Provide detailed observations."
-              },
-              {
-                inlineData: {
-                  mimeType: mimeType,
-                  data: base64Image
-                }
-              }
-            ]
-          }
-        ]
-      },
-      {
-        headers: { "Content-Type": "application/json" }
-      }
-    );
-    
-    return response.data.candidates?.[0]?.content?.parts?.[0]?.text || "No analysis available";
+    const prompt = "Analyze this image for environmental concerns. Identify any pollution, violations, or environmental issues visible. Provide detailed observations.";
+    return await generateContentWithImage(prompt, base64Image, mimeType);
   } catch (error) {
     console.error('Image analysis error:', error);
     throw error;
@@ -214,7 +158,7 @@ User Question: ${message}
 Provide a helpful, detailed response:`;
 
     // Call Gemini API
-    const reply = await callGeminiAPI(systemPrompt);
+    const reply = await generateText(systemPrompt);
 
     res.json({
       success: true,
