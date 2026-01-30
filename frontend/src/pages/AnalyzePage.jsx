@@ -23,7 +23,7 @@ export default function AnalyzePage() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5001/api/analyze",
+        `${import.meta.env.VITE_API_URL}/api/analyze`,
         formData,
         {
           headers: {

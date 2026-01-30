@@ -228,7 +228,7 @@ export default function ChatPage() {
 
       try {
         setIsLoading(true);
-        const response = await axios.post("http://localhost:5001/api/chat/upload", formData, {
+        const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/chat/upload`, formData, {
           headers: { "Content-Type": "multipart/form-data" }
         });
 
@@ -294,7 +294,7 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post("http://localhost:5001/api/chat/message", {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/chat/message`, {
         message: inputMessage,
         files: uploadedFiles.map(f => ({ name: f.name, content: f.content })),
         conversationHistory: messages.slice(-10).map(m => ({
