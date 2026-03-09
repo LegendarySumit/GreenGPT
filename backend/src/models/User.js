@@ -1,44 +1,22 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+// This file is deprecated - User data is now stored in Firestore
+// 
+// Firestore User Document Structure:
+// Collection: users
+// Document ID: Firebase UID (from Firebase Authentication)
+// Fields:
+//   - email: string
+//   - name: string
+//   - photoURL: string | null
+//   - createdAt: Timestamp
+//   - analysisCount: number
+//
+// All user authentication is handled by Firebase Auth on the frontend.
+// Backend only retrieves user data from Firestore using the verified UID.
+//
+// See backend/src/config/firebaseAdmin.js for Firestore initialization.
+// See backend/src/middleware/auth.js for Firebase token verification.
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Please provide a name'],
-    trim: true
-  },
-  email: {
-    type: String,
-    required: [true, 'Please provide an email'],
-    unique: true,
-    lowercase: true,
-    trim: true,
-    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email']
-  },
-  password: {
-    type: String,
-    required: [true, 'Please provide a password'],
-    minlength: 6,
-    select: false
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-// Hash password before saving
-userSchema.pre('save', async function() {
-  if (!this.isModified('password')) return;
-  
-  this.password = await bcrypt.hash(this.password, 10);
-});
-
-// Method to check password
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+export const getUserFromFirestore = async (adminDb, userId) => {
+  const userDoc = await adminDb.collection('users').doc(userId).get();
+  return userDoc.exists ? userDoc.data() : null;
 };
-
-const User = mongoose.model('User', userSchema);
-
-export default User;

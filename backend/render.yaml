@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: greengpt-backend
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: FIREBASE_PROJECT_ID
+        scope: run
+      - key: FIREBASE_SERVICE_ACCOUNT
+        scope: run
+      - key: FRONTEND_URL
+        value: https://greengpt.vercel.app

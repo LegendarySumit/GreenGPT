@@ -1,60 +1,65 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import { auth, db } from '../config/firebase';
+import { collection, doc, getDocs, setDoc, deleteDoc, updateDoc, query, where } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext';
 
-// Get initial chat sessions from localStorage synchronously
-const getStoredChatSessions = () => {
+// Save chats to Firestore
+const saveChatsToFirestore = async (userId, chats) => {
   try {
-    const saved = localStorage.getItem('chatSessions');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return parsed.map(s => ({
-        ...s,
-        createdAt: new Date(s.createdAt),
-        updatedAt: new Date(s.updatedAt),
-        messages: s.messages.map(m => ({
-          ...m,
-          timestamp: new Date(m.timestamp)
-        }))
+    if (!userId) return;
+    for (const chat of chats) {
+      // Ensure chat ID is a string for Firestore
+      const chatId = String(chat.id);
+      const chatRef = doc(db, 'users', userId, 'chats', chatId);
+      
+      // Convert message timestamps to proper format
+      const processedMessages = (chat.messages || []).map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)
       }));
+      
+      await setDoc(chatRef, {
+        title: chat.title,
+        messages: processedMessages,
+        createdAt: chat.createdAt instanceof Date ? chat.createdAt : new Date(chat.createdAt),
+        updatedAt: chat.updatedAt instanceof Date ? chat.updatedAt : new Date(chat.updatedAt)
+      }, { merge: true });
     }
   } catch (e) {
-    console.error("Failed to load chat history:", e);
+    console.error("Failed to save chats:", e);
   }
-  return [{
-    id: 1,
-    title: "New Chat",
-    messages: [
-      {
-        role: "assistant",
-        content: "👋 Hi! I'm GreenGPT, your AI environmental assistant. I can help you analyze documents, answer questions about pollution data, and provide environmental insights. Try asking me something!",
-        timestamp: new Date()
-      }
-    ],
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }];
 };
 
-// Get initial session ID
-const getStoredSessionId = () => {
+// Get initial chat sessions from Firestore (async)
+const getStoredChatSessions = async (userId) => {
   try {
-    const saved = localStorage.getItem('currentChatSessionId');
-    if (saved) {
-      return parseInt(saved, 10);
-    }
-  } catch (e) {}
-  return 1;
+    if (!userId) return [];
+    const chatsRef = collection(db, 'users', userId, 'chats');
+    const snapshot = await getDocs(chatsRef);
+    const chats = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate?.() || new Date(doc.data().createdAt),
+      updatedAt: doc.data().updatedAt?.toDate?.() || new Date(doc.data().updatedAt),
+      messages: (doc.data().messages || []).map(m => ({
+        ...m,
+        timestamp: m.timestamp?.toDate?.() || new Date(m.timestamp)
+      }))
+    }));
+    return chats.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  } catch (e) {
+    console.error("Failed to load chat history:", e);
+    return [];
+  }
 };
 
 export default function ChatPage() {
-  const storedSessions = getStoredChatSessions();
-  const storedSessionId = getStoredSessionId();
-  
-  const [chatSessions, setChatSessions] = useState(storedSessions);
-  const [currentSessionId, setCurrentSessionId] = useState(
-    storedSessions.find(s => s.id === storedSessionId) ? storedSessionId : storedSessions[0]?.id || 1
-  );
+  const { user } = useAuth();
+  const [chatSessions, setChatSessions] = useState([]);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -62,9 +67,44 @@ export default function ChatPage() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
+  const [loadingChats, setLoadingChats] = useState(true);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const recognitionRef = useRef(null);
+
+  // Load chats from Firestore when user changes
+  useEffect(() => {
+    const loadChats = async () => {
+      if (user?.id) {
+        setLoadingChats(true);
+        const chats = await getStoredChatSessions(user.id);
+        if (chats.length === 0) {
+          // Create initial empty chat if none exist
+          const newChat = {
+            id: Date.now().toString(),
+            title: "New Chat",
+            messages: [
+              {
+                role: "assistant",
+                content: "👋 Hi! I'm GreenGPT, your AI environmental assistant. I can help you analyze documents, answer questions about pollution data, and provide environmental insights. Try asking me something!",
+                timestamp: new Date()
+              }
+            ],
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          await saveChatsToFirestore(user.id, [newChat]);
+          setChatSessions([newChat]);
+          setCurrentSessionId(newChat.id);
+        } else {
+          setChatSessions(chats);
+          setCurrentSessionId(chats[0]?.id || null);
+        }
+        setLoadingChats(false);
+      }
+    };
+    loadChats();
+  }, [user?.id]);
 
   const currentSession = chatSessions.find(s => s.id === currentSessionId);
   const messages = currentSession?.messages || [];
@@ -77,19 +117,24 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Save to localStorage
+  // Save chats to Firestore whenever they change
   useEffect(() => {
-    localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
-  }, [chatSessions]);
+    if (user?.id && chatSessions.length > 0) {
+      saveChatsToFirestore(user.id, chatSessions);
+    }
+  }, [chatSessions, user?.id]);
 
-  // Save current session ID to localStorage
+  // Save current session ID to localStorage (for quick access on page load)
   useEffect(() => {
-    localStorage.setItem('currentChatSessionId', currentSessionId.toString());
+    if (currentSessionId) {
+      localStorage.setItem('currentChatSessionId', currentSessionId.toString());
+    }
   }, [currentSessionId]);
 
   // Create new chat session
   const createNewChat = () => {
-    const newId = Math.max(...chatSessions.map(s => s.id), 0) + 1;
+    // Use timestamp-based string ID (same as initial chat creation)
+    const newId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
     const newSession = {
       id: newId,
       title: "New Chat",
@@ -106,16 +151,20 @@ export default function ChatPage() {
     setChatSessions([newSession, ...chatSessions]);
     setCurrentSessionId(newId);
     setUploadedFiles([]);
+    // Close sidebar on mobile when creating new chat
+    setSidebarOpen(false);
   };
 
   // Switch to a chat session
   const switchToChat = (sessionId) => {
     setCurrentSessionId(sessionId);
     setUploadedFiles([]);
+    // Close sidebar on mobile when selecting a chat
+    setSidebarOpen(false);
   };
 
   // Delete chat session
-  const deleteChat = (sessionId) => {
+  const deleteChat = async (sessionId) => {
     if (chatSessions.length === 1) {
       alert("Cannot delete the last chat session");
       return;
@@ -124,9 +173,23 @@ export default function ChatPage() {
     const filtered = chatSessions.filter(s => s.id !== sessionId);
     setChatSessions(filtered);
     
+    // Delete from Firestore
+    if (user?.id) {
+      try {
+        // Ensure sessionId is a string for Firestore
+        const chatId = String(sessionId);
+        await deleteDoc(doc(db, 'users', user.id, 'chats', chatId));
+      } catch (e) {
+        console.error("Failed to delete chat from Firestore:", e);
+      }
+    }
+    
     if (sessionId === currentSessionId) {
       setCurrentSessionId(filtered[0].id);
     }
+    
+    // Close sidebar on mobile after deleting
+    setSidebarOpen(false);
   };
 
   // Start renaming chat
@@ -136,17 +199,33 @@ export default function ChatPage() {
   };
 
   // Save renamed chat
-  const saveRename = (sessionId) => {
+  const saveRename = async (sessionId) => {
     if (!editingTitle.trim()) {
       setEditingSessionId(null);
       return;
     }
     
-    setChatSessions(chatSessions.map(s => 
+    const updatedSessions = chatSessions.map(s => 
       s.id === sessionId 
         ? { ...s, title: editingTitle.trim() }
         : s
-    ));
+    );
+    setChatSessions(updatedSessions);
+    
+    // Update in Firestore
+    if (user?.id) {
+      try {
+        // Ensure sessionId is a string for Firestore
+        const chatId = String(sessionId);
+        await updateDoc(doc(db, 'users', user.id, 'chats', chatId), {
+          title: editingTitle.trim(),
+          updatedAt: new Date()
+        });
+      } catch (e) {
+        console.error("Failed to update chat title in Firestore:", e);
+      }
+    }
+    
     setEditingSessionId(null);
     setEditingTitle("");
   };
@@ -372,121 +451,219 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="h-screen flex bg-gray-50 dark:bg-gray-900 overflow-hidden transition-colors duration-300">
-      {/* Sidebar - Clean Gemini style */}
+    <div className="h-screen flex bg-gray-50 dark:bg-gray-900 overflow-hidden transition-colors duration-300 relative">
+      {/* Loading State */}
+      {loadingChats && (
+        <div className="w-full h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-300">Loading your chats...</p>
+          </div>
+        </div>
+      )}
+
+      {!loadingChats && (
+      <>
+      {/* Mobile Backdrop Overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar - Professional GPT-like Design */}
       <motion.div
         initial={false}
-        animate={{ width: sidebarOpen ? 260 : 44 }}
+        animate={{ width: sidebarOpen ? 280 : 40 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
-        className="shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col transition-colors duration-300"
+        className={`${sidebarOpen ? 'fixed left-0 top-0 h-screen z-50 md:relative md:z-auto md:shrink-0' : 'relative shrink-0'} bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col transition-colors duration-300`}
       >
-        {/* Single row with Hamburger and New Chat */}
-        <div className={`shrink-0 p-1.5 xs:p-2 sm:p-3 flex items-center gap-1 xs:gap-1.5 sm:gap-2 ${!sidebarOpen ? 'justify-center' : ''}`}>
+        {/* Top Section - Logo & Menu */}
+        <div className={`shrink-0 p-3 sm:p-4 flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'}`}>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="shrink-0 w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="shrink-0 w-10 h-10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200"
             title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
           >
-            <svg className="w-4 h-4 xs:w-[18px] xs:h-[18px] sm:w-5 sm:h-5 text-gray-700 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
 
           {sidebarOpen && (
-            <button
-              onClick={createNewChat}
-              className="flex-1 px-1.5 xs:px-2 sm:px-3 py-1 xs:py-1.5 sm:py-2 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2 text-[10px] xs:text-xs sm:text-sm"
-            >
-              <svg className="w-2.5 h-2.5 xs:w-3 xs:h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="hidden xs:inline">New</span>
-            </button>
+            <div className="flex-1 flex items-center gap-2 justify-end">
+              <img src="/favicon.svg" alt="GreenGPT" className="w-8 h-8 rounded-lg shrink-0" />
+              <span className="text-sm font-bold text-gray-900 dark:text-white">GreenGPT</span>
+            </div>
           )}
         </div>
 
-        {/* Chat History */}
+        {/* New Chat Button */}
         {sidebarOpen && (
-          <div className="flex-1 overflow-y-auto px-2 xs:px-2.5 sm:px-3 space-y-0.5 xs:space-y-1 sm:space-y-1 pb-2 xs:pb-2.5 sm:pb-3">
-            {chatSessions.map((session) => (
-              <div
-                key={session.id}
-                className={`group relative rounded-lg transition-all ${
-                  session.id === currentSessionId
-                    ? 'bg-gray-100 dark:bg-gray-800 border border-[#1f7a63] dark:border-[#2dd4a1]'
-                    : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
-                }`}
-              >
-                {editingSessionId === session.id ? (
-                  <div className="flex items-center gap-0.5 xs:gap-1 sm:gap-1 p-1.5 xs:p-1.5 sm:p-2">
-                    <input
-                      type="text"
-                      value={editingTitle}
-                      onChange={(e) => setEditingTitle(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && saveRename(session.id)}
-                      onBlur={() => saveRename(session.id)}
-                      className="flex-1 px-1.5 xs:px-2 sm:px-2 py-0.5 xs:py-1 sm:py-1 text-xs xs:text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded border border-[#1f7a63] dark:border-[#2dd4a1] focus:outline-none"
-                      autoFocus
-                    />
-                    <button
-                      onClick={() => saveRename(session.id)}
-                      className="p-0.5 xs:p-0.5 sm:p-1 hover:bg-gray-700 rounded text-[#2dd4a1]"
-                    >
-                      <svg className="w-3 h-3 xs:w-3 xs:h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={cancelRename}
-                      className="p-0.5 xs:p-0.5 sm:p-1 hover:bg-gray-700 rounded text-gray-400"
-                    >
-                      <svg className="w-3 h-3 xs:w-3 xs:h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2 p-2 xs:p-2.5 sm:p-3">
-                    <button
-                      onClick={() => switchToChat(session.id)}
-                      className="flex-1 text-left min-w-0"
-                    >
-                      <div className="flex items-start gap-1 xs:gap-1.5 sm:gap-2">
-                        <svg className="w-3 h-3 xs:w-3 xs:h-3 sm:w-4 sm:h-4 mt-0.5 flex-shrink-0 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                        </svg>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs xs:text-xs sm:text-sm text-gray-900 dark:text-white truncate font-medium">{session.title}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-500 hidden xs:block">{session.messages.length - 1} messages</p>
-                        </div>
+          <div className="px-3 sm:px-4 pb-3">
+            <button
+              onClick={createNewChat}
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-linear-to-r from-emerald-500 to-teal-600 text-white rounded-lg font-semibold hover:from-emerald-600 hover:to-teal-700 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm group"
+            >
+              <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>New Chat</span>
+            </button>
+          </div>
+        )}
+
+        {/* Divider */}
+        {sidebarOpen && (
+          <div className="px-3 sm:px-4">
+            <div className="h-px bg-linear-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
+          </div>
+        )}
+
+        {/* Chat History Section */}
+        {sidebarOpen && (
+          <div className="flex-1 overflow-y-auto px-3 sm:px-4 pt-4 pb-3 flex flex-col">
+            {/* Section Header */}
+            <div className="mb-3">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Chat History</p>
+            </div>
+
+            {/* Chat Items */}
+            {chatSessions.length > 0 ? (
+              <div className="space-y-2 flex-1">
+                {chatSessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className="group relative"
+                  >
+                    {editingSessionId === session.id ? (
+                      <div className="flex items-center gap-2 p-2.5">
+                        <input
+                          type="text"
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && saveRename(session.id)}
+                          onBlur={() => saveRename(session.id)}
+                          className="flex-1 px-2.5 py-1.5 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded border border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => saveRename(session.id)}
+                          className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-emerald-600 dark:text-emerald-400 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={cancelRename}
+                          className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-400 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
                       </div>
-                    </button>
-                    
-                    {/* Action Buttons - Show on hover */}
-                    <div className="flex-shrink-0 flex items-center gap-0.5 xs:gap-0.5 sm:gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => startRename(session.id, session.title)}
-                        className="p-0.5 xs:p-0.5 sm:p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400 hover:text-[#1f7a63] dark:hover:text-[#2dd4a1]"
-                        title="Rename"
-                      >
-                        <svg className="w-3 h-3 xs:w-3 xs:h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => deleteChat(session.id)}
-                        className="p-0.5 xs:p-0.5 sm:p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400 hover:text-red-400"
-                        title="Delete"
-                      >
-                        <svg className="w-3 h-3 xs:w-3 xs:h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => switchToChat(session.id)}
+                          className={`w-full text-left px-3 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-2.5 relative overflow-hidden ${
+                            session.id === currentSessionId
+                              ? 'bg-linear-to-r from-emerald-100 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/20 border border-emerald-300 dark:border-emerald-800 shadow-sm'
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                          }`}
+                        >
+                          {/* Chat icon */}
+                          <svg className={`w-4 h-4 shrink-0 transition-colors ${
+                            session.id === currentSessionId
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+                          }`} fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2z" />
+                          </svg>
+
+                          {/* Title and Message Count */}
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-medium truncate transition-colors ${
+                              session.id === currentSessionId
+                                ? 'text-gray-900 dark:text-white'
+                                : 'text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white'
+                            }`}>
+                              {session.title}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500 truncate">
+                              {session.messages.length - 1} messages
+                            </p>
+                          </div>
+                        </button>
+
+                        {/* Action Buttons - Show on hover */}
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              startRename(session.id, session.title);
+                            }}
+                            className="p-1 hover:bg-gray-300 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                            title="Rename"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              deleteChat(session.id);
+                            }}
+                            className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                            title="Delete"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
-            ))}
+            ) : (
+              <div className="flex-1 flex items-center justify-center py-8">
+                <div className="text-center">
+                  <svg className="w-10 h-10 text-gray-300 dark:text-gray-700 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-xs text-gray-500 dark:text-gray-500">No chats yet</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Bottom Quick Links */}
+        {sidebarOpen && (
+          <div className="shrink-0 mt-auto border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+            <a
+              href="/profile"
+              className="w-full px-3 py-3 rounded-lg bg-linear-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-800/20 hover:from-emerald-100 hover:to-teal-100 dark:hover:from-emerald-900/40 dark:hover:to-teal-800/40 transition-all duration-200 border border-emerald-200 dark:border-emerald-800/50 hover:border-emerald-300 dark:hover:border-emerald-700/50 flex items-center justify-center gap-2 text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-emerald-200 group"
+              title="Profile"
+            >
+              <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 17a6 6 0 0112 0v4H6v-4z" />
+              </svg>
+              <span className="text-sm font-semibold">Profile</span>
+            </a>
           </div>
         )}
       </motion.div>
@@ -508,13 +685,13 @@ export default function ChatPage() {
 
               {/* Uploaded Files Badges */}
               {uploadedFiles.length > 0 && (
-                <div className="flex gap-0.5 xs:gap-1 flex-wrap justify-end flex-shrink-0 max-w-[40%]">
+                <div className="flex gap-0.5 xs:gap-1 flex-wrap justify-end shrink-0 max-w-[40%]">
                   {uploadedFiles.map((file, idx) => (
                     <div key={idx} className="bg-[#1f7a63]/10 border border-[#1f7a63]/30 rounded px-1 xs:px-2 sm:px-3 py-0.5 flex items-center gap-0.5 xs:gap-1">
                       <svg className="w-2 h-2 xs:w-2.5 xs:h-2.5 sm:w-3 sm:h-3 text-[#1f7a63] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <span className="text-[9px] xs:text-[10px] sm:text-xs text-[#1f7a63] font-medium truncate max-w-[40px] xs:max-w-[60px] sm:max-w-none">{file.name}</span>
+                      <span className="text-[9px] xs:text-[10px] sm:text-xs text-[#1f7a63] font-medium truncate max-w-10 xs:max-w-[60px] sm:max-w-none">{file.name}</span>
                     </div>
                   ))}
                 </div>
@@ -532,12 +709,12 @@ export default function ChatPage() {
               className="text-center mb-2 xs:mb-3 sm:mb-4"
             >
               <div className="flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2 mb-1 xs:mb-1.5">
-                <div className="w-7 h-7 xs:w-9 xs:h-9 sm:w-12 sm:h-12 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-7 h-7 xs:w-9 xs:h-9 sm:w-12 sm:h-12 bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] rounded-full flex items-center justify-center shrink-0">
                   <svg className="w-3.5 h-3.5 xs:w-[18px] xs:h-[18px] sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <h1 className="text-xl xs:text-2xl sm:text-4xl font-bold bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] bg-clip-text text-transparent">
+                <h1 className="text-xl xs:text-2xl sm:text-4xl font-bold bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] bg-clip-text text-transparent">
                   GreenGPT
                 </h1>
               </div>
@@ -556,10 +733,10 @@ export default function ChatPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.1 }}
                     onClick={() => setInputMessage(prompt.title)}
-                    className="p-1.5 xs:p-2.5 sm:p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg xs:rounded-xl sm:rounded-2xl hover:border-[#1f7a63] dark:hover:border-[#2dd4a1] hover:shadow-xl transition-all text-left group active:scale-95"
+                    className="p-1.5 xs:p-2.5 sm:p-4 bg-linear-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg xs:rounded-xl sm:rounded-2xl hover:border-[#1f7a63] dark:hover:border-[#2dd4a1] hover:shadow-xl transition-all text-left group active:scale-95"
                   >
                     <div className="flex flex-col xs:flex-row items-center xs:items-start gap-1 xs:gap-2 sm:gap-2.5">
-                      <div className={`shrink-0 w-6 h-6 xs:w-8 xs:h-8 sm:w-12 sm:h-12 bg-gradient-to-br ${prompt.color} rounded-md xs:rounded-lg sm:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                      <div className={`shrink-0 w-6 h-6 xs:w-8 xs:h-8 sm:w-12 sm:h-12 bg-linear-to-br ${prompt.color} rounded-md xs:rounded-lg sm:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
                         <svg className="w-3 h-3 xs:w-4 xs:h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={prompt.iconPath} />
                         </svg>
@@ -592,16 +769,16 @@ export default function ChatPage() {
                   exit={{ opacity: 0 }}
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  <div className={`max-w-[95%] xs:max-w-[90%] sm:max-w-2xl ${message.role === "user" ? "bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] text-white" : message.role === "system" ? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-center w-full" : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"} rounded-lg xs:rounded-xl sm:rounded-2xl px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-3 shadow-md transition-colors duration-300`}>
+                  <div className={`max-w-[95%] xs:max-w-[90%] sm:max-w-2xl ${message.role === "user" ? "bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] text-white" : message.role === "system" ? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-center w-full" : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"} rounded-lg xs:rounded-xl sm:rounded-2xl px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-3 shadow-md transition-colors duration-300`}>
                     {message.role === "assistant" && (
                       <div className="flex items-center gap-0.5 xs:gap-1 sm:gap-2 mb-0.5 xs:mb-1 sm:mb-2">
-                        <div className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] rounded-full flex items-center justify-center shrink-0">
                           <span className="text-white text-[8px] xs:text-[9px] sm:text-xs font-bold">AI</span>
                         </div>
                         <span className="text-[9px] xs:text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 hidden xs:inline">GreenGPT</span>
                       </div>
                     )}
-                    <p className="whitespace-pre-wrap leading-relaxed text-[10px] xs:text-xs sm:text-sm break-words">{message.content}</p>
+                    <p className="whitespace-pre-wrap leading-relaxed text-[10px] xs:text-xs sm:text-sm wrap-break-word">{message.content}</p>
                     <span className="text-[8px] xs:text-[9px] sm:text-xs opacity-60 mt-0.5 block">
                       {message.timestamp.toLocaleTimeString()}
                     </span>
@@ -675,7 +852,7 @@ export default function ChatPage() {
                   placeholder={isListening ? "Listening..." : "Message GreenGPT..."}
                   disabled={isLoading || isListening}
                   rows={1}
-                  className="flex-1 bg-transparent text-sm xs:text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none resize-none max-h-[200px] overflow-y-auto disabled:opacity-50 py-1 xs:py-1.5 sm:py-1.5 leading-relaxed"
+                  className="flex-1 bg-transparent text-sm xs:text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none resize-none max-h-50 overflow-y-auto disabled:opacity-50 py-1 xs:py-1.5 sm:py-1.5 leading-relaxed"
                   style={{ minHeight: '24px' }}
                 />
 
@@ -741,6 +918,8 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

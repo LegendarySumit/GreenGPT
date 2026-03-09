@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -9,7 +10,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signup } = useAuth();
+  const { signup, signupWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -195,6 +196,17 @@ export default function SignupPage() {
             >
               {loading ? "Creating Account..." : "Create Account"}
             </button>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/20"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white/10 text-gray-300">or continue with</span>
+              </div>
+            </div>
+
+            <GoogleSignInButton isSignup={true} />
           </form>
 
           <div className="mt-6 text-center">

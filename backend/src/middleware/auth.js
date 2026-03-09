@@ -1,20 +1,5 @@
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
-import { userStorage } from '../utils/userStorage.js';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-
-// Check if MongoDB is connected
-let useMongoose = true;
-const checkMongoose = async () => {
-  try {
-    await User.findOne();
-    useMongoose = true;
-  } catch (error) {
-    useMongoose = false;
-  }
-};
-checkMongoose();
+import { adminAuth } from '../config/firebaseAdmin.js';
+import { adminDb } from '../config/firebaseAdmin.js';
 
 export const protect = async (req, res, next) => {
   try {
@@ -32,15 +17,24 @@ export const protect = async (req, res, next) => {
     }
 
     try {
-      const decoded = jwt.verify(token, JWT_SECRET);
+      // Verify Firebase ID token
+      const decodedToken = await adminAuth.verifyIdToken(token);
       
-      if (useMongoose) {
-        req.user = await User.findById(decoded.id).select('-password');
-      } else {
-        const user = await userStorage.findById(decoded.id);
-        req.user = { id: user._id, ...user };
+      // Check if user exists in Firestore (must have signed up)
+      const userDocSnap = await adminDb.collection('users').doc(decodedToken.uid).get();
+      
+      if (!userDocSnap.exists()) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not found. Please sign up first.'
+        });
       }
       
+      req.user = {
+        id: decodedToken.uid,
+        email: decodedToken.email || null,
+        name: decodedToken.name || null,
+      };
       next();
     } catch (error) {
       return res.status(401).json({
@@ -51,7 +45,7 @@ export const protect = async (req, res, next) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error during authentication'
     });
   }
 };

@@ -25,3 +25,8 @@ dist-ssr
 
 # Ignore environment variables
 .env
+.env.*
+!.env.example
+.env.local
+.env.production.local
+.env.development.local

@@ -4,13 +4,13 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-[#1f7a63] to-[#155744] py-24 overflow-hidden">
+      <div className="relative bg-gradient-to-br from-[#1f7a63] to-[#155744] py-12 sm:py-16 md:py-24 overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
           }}></div>
         </div>
-        <div className="max-w-6xl mx-auto px-6 relative z-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -34,9 +34,9 @@ export default function AboutPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-6 py-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">
         {/* Stats Section */}
-        <div className="grid md:grid-cols-3 gap-8 -mt-24 mb-16 relative z-10">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 -mt-12 sm:-mt-16 md:-mt-24 mb-12 sm:mb-16 relative z-10">
           {[
             { number: "1000+", label: "Documents Analyzed", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
             { number: "50+", label: "Government Clients", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" },
@@ -47,9 +47,9 @@ export default function AboutPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 + idx * 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8 text-center hover:shadow-2xl transition-all duration-300"
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 md:p-8 text-center hover:shadow-2xl transition-all duration-300"
             >
-              <div className="w-16 h-16 bg-gradient-to-br from-[#1f7a63] to-[#2dd4a1] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <div className="w-12 sm:w-14 md:w-16 h-12 sm:h-14 md:h-16 bg-gradient-to-br from-[#1f7a63] to-[#2dd4a1] rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
                 </svg>
@@ -66,10 +66,10 @@ export default function AboutPage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="grid md:grid-cols-2 gap-12 items-center mb-20"
+          className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center mb-12 sm:mb-16 md:mb-20"
         >
           <div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-6">Our Mission</h2>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">Our Mission</h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-base sm:text-lg mb-4">
               GreenGPT bridges the gap between complex environmental data and actionable policy decisions. 
               We make environmental intelligence accessible, fast, and accurate.
@@ -86,7 +86,7 @@ export default function AboutPage() {
               ))}
             </div>
           </div>
-          <div className="bg-gradient-to-br from-[#1f7a63] to-[#155744] rounded-2xl p-8 shadow-xl">
+          <div className="bg-gradient-to-br from-[#1f7a63] to-[#155744] rounded-2xl p-6 sm:p-8 md:p-8 shadow-xl">
             <div className="space-y-4">
               {[
                 { label: "Document Analysis", value: "95%" },
@@ -115,7 +115,7 @@ export default function AboutPage() {
         </motion.div>
 
         {/* Features Grid */}
-        <div className="mb-20">
+        <div className="mb-12 sm:mb-16 md:mb-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -126,7 +126,7 @@ export default function AboutPage() {
             <p className="text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-300">Comprehensive environmental intelligence solutions</p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid sm:grid-cols-2 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
             {[
               {
                 icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
@@ -155,9 +155,9 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-[#1f7a63]/30 dark:hover:border-[#2dd4a1]/30 hover:scale-105 transition-all duration-300"
+                className="bg-white dark:bg-gray-800 rounded-2xl p-5 sm:p-6 md:p-8 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-[#1f7a63]/30 dark:hover:border-[#2dd4a1]/30 hover:scale-105 transition-all duration-300"
               >
-                <div className="w-14 h-14 bg-gradient-to-br from-[#1f7a63] to-[#2dd4a1] rounded-xl flex items-center justify-center mb-5 shadow-lg">
+                <div className="w-12 sm:w-12 md:w-14 h-12 sm:h-12 md:h-14 bg-gradient-to-br from-[#1f7a63] to-[#2dd4a1] rounded-xl flex items-center justify-center mb-3 sm:mb-4 md:mb-5 shadow-lg">
                   <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={feature.icon} />
                   </svg>
@@ -175,15 +175,15 @@ export default function AboutPage() {
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="bg-gradient-to-r from-[#1f7a63] to-[#155744] py-16"
+        className="bg-gradient-to-r from-[#1f7a63] to-[#155744] py-8 sm:py-12 md:py-16"
       >
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Get In Touch</h2>
-            <p className="text-base sm:text-lg md:text-xl text-white/90">Have questions? We'd love to hear from you</p>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-10 md:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 sm:mb-4">Get In Touch</h2>
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/90">Have questions? We'd love to hear from you</p>
           </div>
 
-              <div className="grid md:grid-cols-3 gap-8 mb-12">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-8 sm:mb-10 md:mb-12">
                 {[
                   {
                     icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
@@ -207,9 +207,9 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 text-center hover:bg-white/20 transition-all duration-300"
+                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 sm:p-5 md:p-6 text-center hover:bg-white/20 transition-all duration-300"
               >
-                <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 sm:w-13 sm:h-13 md:w-14 md:h-14 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-2 sm:mb-3 md:mb-4">
                   <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={contact.icon} />
                   </svg>
@@ -225,7 +225,7 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 relative overflow-hidden"
+                className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl p-5 sm:p-6 md:p-8 shadow-2xl border border-white/20 relative overflow-hidden"
               >
                 {/* Decorative Background Elements */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#2dd4a1]/10 to-[#1f7a63]/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
@@ -233,26 +233,26 @@ export default function AboutPage() {
                 
                 <div className="relative z-10">
                   {/* Form Header */}
-                  <div className="text-center mb-6">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#1f7a63]/10 dark:bg-[#2dd4a1]/10 rounded-full mb-3">
+                  <div className="text-center mb-4 sm:mb-5 md:mb-6">
+                    <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-[#1f7a63]/10 dark:bg-[#2dd4a1]/10 rounded-full mb-2 sm:mb-3">
                       <svg className="w-5 h-5 text-[#1f7a63] dark:text-[#2dd4a1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                       </svg>
                       <span className="text-sm font-semibold text-[#1f7a63] dark:text-[#2dd4a1]">Let's Connect</span>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Send us a message</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">We typically respond within 24 hours</p>
+                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">Send us a message</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">We typically respond within 24 hours</p>
                   </div>
 
-                  <form className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4">
+                  <form className="space-y-3 sm:space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.4 }}
                       >
-                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-2">
+                        <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-2">
                           <svg className="w-4 h-4 text-[#1f7a63] dark:text-[#2dd4a1]" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                           </svg>
@@ -261,7 +261,7 @@ export default function AboutPage() {
                         <input
                           type="text"
                           placeholder="John"
-                          className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-[#2dd4a1] focus:border-[#2dd4a1] outline-none transition-all hover:border-[#1f7a63]/50 dark:hover:border-[#2dd4a1]/50"
+                          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-[#2dd4a1] focus:border-[#2dd4a1] outline-none transition-all hover:border-[#1f7a63]/50 dark:hover:border-[#2dd4a1]/50"
                         />
                       </motion.div>
                       
@@ -271,7 +271,7 @@ export default function AboutPage() {
                         viewport={{ once: true }}
                         transition={{ delay: 0.4 }}
                       >
-                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-2">
+                        <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-2">
                           <svg className="w-4 h-4 text-[#1f7a63] dark:text-[#2dd4a1]" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                           </svg>

@@ -215,6 +215,29 @@ PORT=5000
 
 ---
 
+## 🌐 Production Deployment
+
+### Deploy to Vercel + Render
+
+GreenGPT is configured for production-ready deployment:
+
+- **Frontend**: Vercel (React + Vite)
+- **Backend**: Render (Node.js + Express)
+- **Database**: Firebase Firestore
+- **Auth**: Firebase Authentication with Google OAuth
+
+**See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed step-by-step instructions.**
+
+### Quick Deploy Checklist
+1. ✅ [Configure Google OAuth in Firebase](./DEPLOYMENT.md#step-1-configure-google-oauth-in-firebase-console)
+2. ✅ [Deploy Frontend to Vercel](./DEPLOYMENT.md#step-2-deploy-frontend-to-vercel)
+3. ✅ [Deploy Backend to Render](./DEPLOYMENT.md#step-3-deploy-backend-to-render)
+4. ✅ [Verify Everything Works](./DEPLOYMENT.md#step-5-verify-everything-works)
+
+📚 **Environment Variables**: See [ENV_VARIABLES.md](./ENV_VARIABLES.md)
+
+---
+
 ## 📊 Key Metrics
 
 ### Impact
