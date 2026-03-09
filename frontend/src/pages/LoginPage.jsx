@@ -187,11 +187,10 @@ export default function LoginPage() {
             </button>
 
             <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/20"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-6 py-2 bg-gradient-to-r from-gray-900/80 via-gray-900/95 to-gray-900/80 text-gray-300 font-medium">or continue with</span>
+              <div className="flex items-center gap-4">
+                <div className="flex-1 h-px bg-white/20"></div>
+                <span className="text-gray-400 text-sm font-medium whitespace-nowrap">or continue with</span>
+                <div className="flex-1 h-px bg-white/20"></div>
               </div>
             </div>
 
