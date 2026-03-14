@@ -15,10 +15,14 @@ export const analyzeDocument = async (req, res) => {
     const text = await extractTextFromPDF(req.file.buffer);
     const truncatedText = text.substring(0, 12000);
     const prompt = environmentPrompt(truncatedText);
-    const result = await generateContent(prompt);
+
+    // responseMimeType forces Gemini to output pure JSON — works on all 1.5+ models
+    const result = await generateContent(prompt, { responseMimeType: "application/json" });
     const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!aiText) throw new Error("No response from AI");
+
+    console.log("AI raw response (first 300 chars):", aiText.slice(0, 300));
 
     const analysis = extractJSON(aiText);
 
