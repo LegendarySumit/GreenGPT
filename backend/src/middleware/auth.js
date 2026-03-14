@@ -3,6 +3,13 @@ import { adminDb } from '../config/firebaseAdmin.js';
 
 export const protect = async (req, res, next) => {
   try {
+    if (!adminAuth || !adminDb) {
+      return res.status(503).json({
+        success: false,
+        message: 'Auth service unavailable — Firebase not configured on server'
+      });
+    }
+
     let token;
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {

@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { generateText, generateContentWithImage, streamContent } from '../config/gemini.js';
+import { protect } from '../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,7 +67,7 @@ async function analyzeVideo(filePath) {
 }
 
 // Upload endpoint
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/upload', protect, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -102,7 +103,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 });
 
 // Chat message endpoint
-router.post('/message', async (req, res) => {
+router.post('/message', protect, async (req, res) => {
   try {
     const { message, files, conversationHistory } = req.body;
 
@@ -254,7 +255,7 @@ Answer the question above concisely and directly (or give the off-topic refusal 
 });
 
 // SSE streaming chat endpoint — sends tokens as they're generated
-router.post('/stream', async (req, res) => {
+router.post('/stream', protect, async (req, res) => {
   const { message, files, conversationHistory } = req.body;
   if (!message) return res.status(400).json({ error: 'Message is required' });
 

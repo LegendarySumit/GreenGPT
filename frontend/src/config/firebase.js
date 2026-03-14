@@ -17,9 +17,6 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase Authentication and get a reference to the service
 export const auth = getAuth(app);
 
-// Set persistence to LOCAL (survives browser restart)
-auth.setPersistence = auth.setPersistence || ((persistence) => Promise.resolve());
-
 // Initialize Google Auth Provider with custom parameters
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('profile');

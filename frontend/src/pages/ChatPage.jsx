@@ -75,7 +75,7 @@ const getStoredChatSessions = async (userId) => {
 };
 
 export default function ChatPage() {
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
   const [chatSessions, setChatSessions] = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -386,8 +386,9 @@ export default function ChatPage() {
 
       try {
         setIsLoading(true);
+        const token = await getToken();
         const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/chat/upload`, formData, {
-          headers: { "Content-Type": "multipart/form-data" }
+          headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` }
         });
 
         setUploadedFiles(prev => [...prev, {
@@ -449,9 +450,10 @@ export default function ChatPage() {
     setStreamingText("");
 
     try {
+      const token = await getToken();
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/stream`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           message: sentMessage,
           files: uploadedFiles.map(f => ({ name: f.name, content: f.content })),

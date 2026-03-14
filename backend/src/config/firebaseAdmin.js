@@ -40,7 +40,7 @@ if (serviceAccount) {
   console.log('Firebase Admin SDK initialized');
 }
 
-export const adminAuth = admin.auth();
-export const adminDb = admin.firestore();
+export const adminAuth = serviceAccount ? admin.auth() : null;
+export const adminDb   = serviceAccount ? admin.firestore() : null;
 
 export default admin;

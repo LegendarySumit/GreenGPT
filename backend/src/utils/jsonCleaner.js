@@ -1,5 +1,5 @@
 export const extractJSON = (text) => {
-  // Remove markdown blocks if present
+  // Remove markdown code fences if present
   let cleaned = text
     .replace(/```json\n?/gi, "")
     .replace(/```\n?/g, "")
@@ -13,8 +13,12 @@ export const extractJSON = (text) => {
     throw new Error("No JSON found in AI response");
   }
 
-  const jsonString = cleaned.substring(firstBrace, lastBrace + 1);
-  
+  let jsonString = cleaned.substring(firstBrace, lastBrace + 1);
+
+  // Remove control characters that break JSON.parse
+  // (keeps \t \n \r which are valid JSON whitespace)
+  jsonString = jsonString.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+
   try {
     return JSON.parse(jsonString);
   } catch (error) {
