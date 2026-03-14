@@ -20,7 +20,7 @@ const buildModelFallbackChain = (requestedModel = "") => {
 };
 
 // Generate content using Gemini API - returns raw response
-export const generateContent = async (prompt) => {
+export const generateContent = async (prompt, configOverride = {}) => {
   // Check if mock API is enabled
   if (process.env.USE_MOCK_API === "true") {
     console.log("[MOCK API] Returning mock response");
@@ -77,7 +77,8 @@ export const generateContent = async (prompt) => {
             temperature: 0.2,
             topP: 0.85,
             topK: 40,
-            maxOutputTokens: 900,
+            maxOutputTokens: 2048,
+            ...configOverride,
           }
         },
         {
@@ -117,7 +118,7 @@ export const generateContent = async (prompt) => {
 
 // Generate text content using Gemini API - returns just the text
 export const generateText = async (prompt) => {
-  const result = await generateContent(prompt);
+  const result = await generateContent(prompt, { maxOutputTokens: 900 });
   return result.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
 };
 
