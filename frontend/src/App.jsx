@@ -16,10 +16,12 @@ import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import ChatPage from "./pages/ChatPage";
 import ProfilePage from "./pages/ProfilePage";
+import HistoryPage from "./pages/HistoryPage";
 
 function AppContent() {
   const location = useLocation();
   const hideFooter = location.pathname === '/chat';
+  const isFixedLayout = location.pathname === '/history';
 
   // Scroll to top on route change
   useEffect(() => {
@@ -29,7 +31,7 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors duration-300">
       <Navbar />
-      <div className="flex-grow">
+      <div className={`flex-grow flex flex-col min-h-0${isFixedLayout ? ' overflow-hidden' : ''}`}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={
@@ -55,6 +57,11 @@ function AppContent() {
           <Route path="/profile" element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/history" element={
+            <ProtectedRoute>
+              <HistoryPage />
             </ProtectedRoute>
           } />
           <Route path="/login" element={<LoginPage />} />

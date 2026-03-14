@@ -1,9 +1,27 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import axios from "axios";
 import { auth, db } from '../config/firebase';
 import { collection, doc, getDocs, setDoc, deleteDoc, updateDoc, query, where } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
+
+// Split AI message content into main answer + follow-up suggestions
+function parseMessageContent(content) {
+  // Catch all variations the AI might produce:
+  // **Explore more:** / **Explore More:** / **Explore more** / ## Explore more: etc.
+  const markerRegex = /\n?\*\*[Ee]xplore\s+[Mm]ore[:\*]*\*?\*?:?\s*\n/;
+  const match = markerRegex.exec(content);
+  if (!match) return { main: content.trim(), suggestions: [] };
+  const main = content.slice(0, match.index).trimEnd();
+  const block = content.slice(match.index + match[0].length).trim();
+  const suggestions = block
+    .split('\n')
+    .map(l => l.replace(/^[•\-\*\d.]\s*/, '').trim())
+    .filter(Boolean);
+  return { main, suggestions };
+}
 
 // Save chats to Firestore
 const saveChatsToFirestore = async (userId, chats) => {
@@ -63,14 +81,26 @@ export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingText, setStreamingText] = useState(""); // full received text from SSE
+  const [displayedText, setDisplayedText] = useState(""); // visually rendered (trails behind for smooth effect)
   const [isListening, setIsListening] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [loadingChats, setLoadingChats] = useState(true);
   const messagesEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const userScrolledUpRef = useRef(false);
   const fileInputRef = useRef(null);
+  const textareaRef = useRef(null);
   const recognitionRef = useRef(null);
+  // Voice transcript refs — persist across recognition restarts
+  const baseTextRef         = useRef(''); // text in box before voice started
+  const priorConfirmedRef   = useRef(''); // finals from previous sessions (after each restart)
+  const sessionFinalRef     = useRef(''); // finals from the current session
+  const isListeningRef      = useRef(false); // sync mirror of isListening — readable inside event handlers
+  const streamDoneRef       = useRef(false); // true when SSE has finished
+  const pendingCommitRef    = useRef(null);  // assistant message to commit after display catches up
 
   // Load chats from Firestore when user changes
   useEffect(() => {
@@ -109,13 +139,55 @@ export default function ChatPage() {
   const currentSession = chatSessions.find(s => s.id === currentSessionId);
   const messages = currentSession?.messages || [];
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (force = false) => {
+    if (!force && userScrolledUpRef.current) return;
+    const el = scrollContainerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  };
+
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    userScrolledUpRef.current = distFromBottom > 80;
   };
 
   useEffect(() => {
-    scrollToBottom();
+    scrollToBottom(true);
   }, [messages]);
+
+  // Gradually drain streamingText into displayedText at a comfortable reading pace
+  useEffect(() => {
+    if (!streamingText) {
+      if (displayedText) setDisplayedText("");
+      return;
+    }
+    if (displayedText.length >= streamingText.length) {
+      // Display caught up — if stream is done, commit and clear
+      if (streamDoneRef.current && pendingCommitRef.current) {
+        const commit = pendingCommitRef.current;
+        pendingCommitRef.current = null;
+        streamDoneRef.current = false;
+        setChatSessions(prev => prev.map(s =>
+          s.id === currentSessionId
+            ? { ...s, messages: [...s.messages, { role: "assistant", content: commit.content, timestamp: commit.timestamp }], updatedAt: new Date() }
+            : s
+        ));
+        setStreamingText("");
+        setDisplayedText("");
+        setIsLoading(false);
+        userScrolledUpRef.current = false;
+        scrollToBottom(true);
+      }
+      return;
+    }
+    // Advance display by 12 chars every 8ms ≈ 1500 chars/sec
+    const timeout = setTimeout(() => {
+      setDisplayedText(streamingText.slice(0, displayedText.length + 12));
+      scrollToBottom(); // respects userScrolledUpRef — won't fight manual scrolling
+    }, 8);
+    return () => clearTimeout(timeout);
+  }, [streamingText, displayedText, currentSessionId]);
 
   // Save chats to Firestore whenever they change
   useEffect(() => {
@@ -236,52 +308,52 @@ export default function ChatPage() {
     setEditingTitle("");
   };
 
-  // Web Speech API Setup
+  // Web Speech API Setup — created once; handlers read isListeningRef (never stale)
   useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'en-US';
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) return;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognitionRef.current = new SpeechRecognition();
+    recognitionRef.current.continuous = true;
+    recognitionRef.current.interimResults = true;
+    recognitionRef.current.lang = 'en-US';
 
-      recognitionRef.current.onresult = (event) => {
-        let finalTranscript = '';
-        let interimTranscript = '';
-        
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + ' ';
-          } else {
-            interimTranscript += transcript;
-          }
+    recognitionRef.current.onresult = (event) => {
+      let sessionFinals = '';
+      let interim = '';
+      for (let i = 0; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          sessionFinals += t + ' ';
+        } else {
+          interim += t;
         }
-        
-        if (finalTranscript) {
-          setInputMessage(prev => prev + finalTranscript);
-        }
-      };
+      }
+      sessionFinalRef.current = sessionFinals;
+      setInputMessage(baseTextRef.current + priorConfirmedRef.current + sessionFinals + interim);
+    };
 
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        if (event.error !== 'no-speech') {
+    recognitionRef.current.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error !== 'no-speech') {
+        isListeningRef.current = false;
+        setIsListening(false);
+      }
+    };
+
+    recognitionRef.current.onend = () => {
+      // isListeningRef is already false when stop() was user-initiated — skip restart
+      if (isListeningRef.current) {
+        priorConfirmedRef.current += sessionFinalRef.current;
+        sessionFinalRef.current = '';
+        try {
+          recognitionRef.current.start();
+        } catch (e) {
+          isListeningRef.current = false;
           setIsListening(false);
         }
-      };
-
-      recognitionRef.current.onend = () => {
-        if (isListening) {
-          // Restart if still listening (for continuous mode)
-          try {
-            recognitionRef.current.start();
-          } catch (e) {
-            setIsListening(false);
-          }
-        }
-      };
-    }
-  }, [isListening]);
+      }
+    };
+  }, []); // run once — no isListening dependency needed
 
   const handleVoiceInput = () => {
     if (!recognitionRef.current) {
@@ -289,10 +361,17 @@ export default function ChatPage() {
       return;
     }
 
-    if (isListening) {
+    if (isListeningRef.current) {
+      isListeningRef.current = false; // set BEFORE stop() so onend sees false immediately
       recognitionRef.current.stop();
       setIsListening(false);
+      // Drop any trailing interim — keep only confirmed text
+      setInputMessage(baseTextRef.current + priorConfirmedRef.current + sessionFinalRef.current);
     } else {
+      baseTextRef.current       = inputMessage;
+      priorConfirmedRef.current = '';
+      sessionFinalRef.current   = '';
+      isListeningRef.current    = true; // set BEFORE start()
       recognitionRef.current.start();
       setIsListening(true);
     }
@@ -341,78 +420,94 @@ export default function ChatPage() {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
+  const handleSendMessage = async (override = null) => {
+    const msg = override?.message ?? inputMessage;
+    if (!msg.trim() || isLoading) return;
 
     const userMessage = {
       role: "user",
-      content: inputMessage,
+      content: msg,
       timestamp: new Date()
     };
 
-    // Check if this is the first user message (only assistant greeting exists)
-    const isFirstUserMessage = currentSession?.messages?.filter(m => m.role === "user").length === 0;
+    const baseMessages = override?.baseMessages ?? messages;
+    // Auto-title from first user message
+    const isFirstUserMessage = baseMessages.filter(m => m.role === "user").length === 0;
     const newTitle = isFirstUserMessage && currentSession?.title === "New Chat"
-      ? inputMessage.slice(0, 35) + (inputMessage.length > 35 ? "..." : "")
+      ? msg.slice(0, 35) + (msg.length > 35 ? "..." : "")
       : null;
 
-    // Add message to current session
-    setChatSessions(prevSessions => prevSessions.map(s => 
-      s.id === currentSessionId 
-        ? { 
-            ...s, 
-            messages: [...s.messages, userMessage],
-            updatedAt: new Date(),
-            // Auto-title from first user message
-            title: newTitle || s.title
-          }
+    setChatSessions(prev => prev.map(s =>
+      s.id === currentSessionId
+        ? { ...s, messages: [...baseMessages, userMessage], updatedAt: new Date(), title: newTitle || s.title }
         : s
     ));
 
+    const sentMessage = msg;
     setInputMessage("");
     setIsLoading(true);
+    setStreamingText("");
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/chat/message`, {
-        message: inputMessage,
-        files: uploadedFiles.map(f => ({ name: f.name, content: f.content })),
-        conversationHistory: messages.slice(-10).map(m => ({
-          role: m.role,
-          content: m.content
-        }))
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: sentMessage,
+          files: uploadedFiles.map(f => ({ name: f.name, content: f.content })),
+          conversationHistory: baseMessages.slice(-10).map(m => ({ role: m.role, content: m.content }))
+        })
       });
 
-      const assistantMessage = {
-        role: "assistant",
-        content: response.data.reply,
-        timestamp: new Date()
-      };
+      if (!response.ok) throw new Error(`Server error ${response.status}`);
 
-      // Add assistant response to current session
-      setChatSessions(prevSessions => prevSessions.map(s => 
-        s.id === currentSessionId 
-          ? { 
-              ...s, 
-              messages: [...s.messages, assistantMessage],
-              updatedAt: new Date()
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop(); // hold incomplete last line
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.text) {
+              fullText += parsed.text;
+              setStreamingText(fullText);
+              scrollToBottom();
             }
-          : s
-      ));
+          } catch { /* ignore partial JSON */ }
+        }
+      }
+
+      // Store the completed message — drain effect will commit once display catches up
+      pendingCommitRef.current = { content: fullText || "No response.", timestamp: new Date() };
+      streamDoneRef.current = true;
     } catch (error) {
-      console.error("Chat error:", error);
+      console.error("Stream error:", error);
       const errorMessage = {
         role: "assistant",
         content: "❌ Sorry, I encountered an error. Please try again.",
         timestamp: new Date()
       };
-      
-      setChatSessions(prevSessions => prevSessions.map(s => 
-        s.id === currentSessionId 
+      setChatSessions(prev => prev.map(s =>
+        s.id === currentSessionId
           ? { ...s, messages: [...s.messages, errorMessage] }
           : s
       ));
-    } finally {
+      setStreamingText("");
+      setDisplayedText("");
       setIsLoading(false);
+      scrollToBottom();
     }
   };
 
@@ -421,6 +516,18 @@ export default function ChatPage() {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  // Puts the message text back in the input box for the user to edit and re-send
+  const handleEditMessage = (content) => {
+    setInputMessage(content);
+  };
+
+  // Trims the conversation back to before this message, then re-sends it immediately
+  const handleRetryMessage = (idx, content) => {
+    if (isLoading) return;
+    const trimmed = messages.slice(0, idx);
+    handleSendMessage({ message: content, baseMessages: trimmed });
   };
 
   const suggestedPrompts = [
@@ -574,7 +681,7 @@ export default function ChatPage() {
                       <>
                         <button
                           onClick={() => switchToChat(session.id)}
-                          className={`w-full text-left px-3 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-2.5 relative overflow-hidden ${
+                          className={`w-full text-left px-3 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-2.5 relative overflow-hidden group-hover:pr-16 ${
                             session.id === currentSessionId
                               ? 'bg-linear-to-r from-emerald-100 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/20 border border-emerald-300 dark:border-emerald-800 shadow-sm'
                               : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
@@ -675,23 +782,40 @@ export default function ChatPage() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="shrink-0 p-1.5 xs:p-2 sm:p-3 md:p-4 border-b border-gray-200 dark:border-gray-700"
+            className="shrink-0 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
           >
-            <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-3 min-w-0">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+
+              {/* Icon */}
+              <div className="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-[#1f7a63] to-[#2dd4a1] flex items-center justify-center shadow-sm">
+                <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4z" />
+                </svg>
+              </div>
+
+              {/* Title + meta */}
               <div className="flex-1 min-w-0">
-                <h1 className="text-xs xs:text-sm sm:text-lg font-bold text-gray-900 dark:text-white truncate">{currentSession?.title || "New Chat"}</h1>
-                <p className="text-[9px] xs:text-[10px] sm:text-xs text-gray-500 hidden xs:block">AI Environmental Assistant</p>
+                <h1 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white truncate leading-tight">
+                  {currentSession?.title || "New Chat"}
+                </h1>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[10px] sm:text-xs text-[#1f7a63] dark:text-[#2dd4a1] font-medium">GreenGPT</span>
+                  <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                  <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500">
+                    {messages.length - 1} message{messages.length - 1 !== 1 ? "s" : ""}
+                  </span>
+                </div>
               </div>
 
               {/* Uploaded Files Badges */}
               {uploadedFiles.length > 0 && (
-                <div className="flex gap-0.5 xs:gap-1 flex-wrap justify-end shrink-0 max-w-[40%]">
+                <div className="flex gap-1 flex-wrap justify-end shrink-0 max-w-[40%]">
                   {uploadedFiles.map((file, idx) => (
-                    <div key={idx} className="bg-[#1f7a63]/10 border border-[#1f7a63]/30 rounded px-1 xs:px-2 sm:px-3 py-0.5 flex items-center gap-0.5 xs:gap-1">
-                      <svg className="w-2 h-2 xs:w-2.5 xs:h-2.5 sm:w-3 sm:h-3 text-[#1f7a63] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div key={idx} className="bg-[#1f7a63]/10 border border-[#1f7a63]/30 rounded-lg px-2 py-1 flex items-center gap-1">
+                      <svg className="w-3 h-3 text-[#1f7a63] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <span className="text-[9px] xs:text-[10px] sm:text-xs text-[#1f7a63] font-medium truncate max-w-10 xs:max-w-[60px] sm:max-w-none">{file.name}</span>
+                      <span className="text-[10px] sm:text-xs text-[#1f7a63] font-medium truncate max-w-[80px] sm:max-w-none">{file.name}</span>
                     </div>
                   ))}
                 </div>
@@ -759,7 +883,7 @@ export default function ChatPage() {
 
         {/* Messages Area - Only show when messages exist */}
         {messages.length > 1 && (
-          <div className="flex-1 overflow-y-auto px-1.5 xs:px-2 sm:px-6 py-2 xs:py-3 sm:py-6 space-y-1.5 xs:space-y-2 sm:space-y-4 scrollbar-hide">
+          <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 xs:px-8 sm:px-16 lg:px-24 py-2 xs:py-3 sm:py-6 space-y-1.5 xs:space-y-2 sm:space-y-5 scrollbar-hide">
             <AnimatePresence>
               {messages.map((message, idx) => (
                 <motion.div
@@ -769,25 +893,124 @@ export default function ChatPage() {
                   exit={{ opacity: 0 }}
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  <div className={`max-w-[95%] xs:max-w-[90%] sm:max-w-2xl ${message.role === "user" ? "bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] text-white" : message.role === "system" ? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-center w-full" : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"} rounded-lg xs:rounded-xl sm:rounded-2xl px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-3 shadow-md transition-colors duration-300`}>
-                    {message.role === "assistant" && (
-                      <div className="flex items-center gap-0.5 xs:gap-1 sm:gap-2 mb-0.5 xs:mb-1 sm:mb-2">
-                        <div className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] rounded-full flex items-center justify-center shrink-0">
-                          <span className="text-white text-[8px] xs:text-[9px] sm:text-xs font-bold">AI</span>
-                        </div>
-                        <span className="text-[9px] xs:text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 hidden xs:inline">GreenGPT</span>
+                  {message.role === "assistant" ? (
+                    <div className="w-full py-1 xs:py-1.5 sm:py-2">
+                      <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-1.5">
+                        <img src="/favicon.svg" alt="GreenGPT" className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 rounded-full shrink-0" />
+                        <span className="text-[9px] xs:text-[10px] sm:text-xs font-semibold text-[#1f7a63] dark:text-[#2dd4a1]">GreenGPT</span>
                       </div>
-                    )}
-                    <p className="whitespace-pre-wrap leading-relaxed text-[10px] xs:text-xs sm:text-sm wrap-break-word">{message.content}</p>
-                    <span className="text-[8px] xs:text-[9px] sm:text-xs opacity-60 mt-0.5 block">
-                      {message.timestamp.toLocaleTimeString()}
-                    </span>
-                  </div>
+                      {(() => {
+                        const { main, suggestions } = parseMessageContent(message.content);
+                        return (
+                          <>
+                            <div className="pl-4 xs:pl-5 sm:pl-7 text-[11px] xs:text-xs sm:text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  h1: ({children}) => <h1 className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100 mt-3 mb-1">{children}</h1>,
+                                  h2: ({children}) => <h2 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 mt-2.5 mb-1">{children}</h2>,
+                                  h3: ({children}) => <h3 className="text-xs font-bold text-gray-900 dark:text-gray-100 mt-2 mb-0.5">{children}</h3>,
+                                  p: ({children}) => <p className="leading-relaxed mb-1.5 last:mb-0">{children}</p>,
+                                  strong: ({children}) => <strong className="font-bold text-gray-900 dark:text-gray-100">{children}</strong>,
+                                  em: ({children}) => <em className="italic">{children}</em>,
+                                  ul: ({children}) => <ul className="list-disc pl-4 space-y-0.5 mb-1.5">{children}</ul>,
+                                  ol: ({children}) => <ol className="list-decimal pl-4 space-y-0.5 mb-1.5">{children}</ol>,
+                                  li: ({children}) => <li className="leading-relaxed">{children}</li>,
+                                  pre: ({children}) => <pre className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2 overflow-x-auto my-1.5">{children}</pre>,
+                                  code: ({node, inline, className, children}) => <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded font-mono text-[10px]">{children}</code>,
+                                  blockquote: ({children}) => <blockquote className="border-l-2 border-[#1f7a63] pl-3 italic text-gray-600 dark:text-gray-400 my-1.5">{children}</blockquote>,
+                                  a: ({children, href}) => <a href={href} className="text-[#1f7a63] dark:text-[#2dd4a1] underline hover:opacity-80" target="_blank" rel="noopener noreferrer">{children}</a>,
+                                }}
+                              >
+                                {main}
+                              </ReactMarkdown>
+                            </div>
+                            {suggestions.length > 0 && (
+                              <div className="mt-2 xs:mt-2.5 pl-4 xs:pl-5 sm:pl-7 flex flex-wrap gap-1 xs:gap-1.5">
+                                {suggestions.map((s, i) => (
+                                  <button
+                                    key={i}
+                                    onClick={() => setInputMessage(s)}
+                                    className="text-[9px] xs:text-[10px] sm:text-xs px-2 xs:px-2.5 sm:px-3 py-0.5 xs:py-1 rounded-full border border-[#1f7a63] dark:border-[#2dd4a1] text-[#1f7a63] dark:text-[#2dd4a1] hover:bg-[#1f7a63]/10 dark:hover:bg-[#2dd4a1]/10 transition-colors cursor-pointer"
+                                  >
+                                    {s}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            <span className="text-[8px] xs:text-[9px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1 block pl-4 xs:pl-5 sm:pl-7">
+                              {message.timestamp.toLocaleTimeString()}
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : message.role === "user" ? (
+                    <div className="group flex flex-col items-end gap-1">
+                      <div className="max-w-[95%] xs:max-w-[90%] sm:max-w-2xl bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] text-white rounded-lg xs:rounded-xl sm:rounded-2xl px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-3 shadow-md">
+                        <p className="whitespace-pre-wrap leading-relaxed text-[10px] xs:text-xs sm:text-sm wrap-break-word">{message.content}</p>
+                        <span className="text-[8px] xs:text-[9px] sm:text-xs opacity-60 mt-0.5 block">
+                          {message.timestamp.toLocaleTimeString()}
+                        </span>
+                      </div>
+                      {/* Edit / Retry — visible on hover */}
+                      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                        <button
+                          onClick={() => handleEditMessage(message.content)}
+                          title="Edit"
+                          className="flex items-center gap-1 text-[11px] xs:text-xs text-gray-400 dark:text-gray-500 hover:text-[#1f7a63] dark:hover:text-[#2dd4a1] transition-colors px-2 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                        >
+                          <svg className="w-3.5 h-3.5 xs:w-4 xs:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleRetryMessage(idx, message.content)}
+                          title="Retry"
+                          className="flex items-center gap-1 text-[11px] xs:text-xs text-gray-400 dark:text-gray-500 hover:text-[#1f7a63] dark:hover:text-[#2dd4a1] transition-colors px-2 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                        >
+                          <svg className="w-3.5 h-3.5 xs:w-4 xs:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          <span>Retry</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="max-w-[95%] xs:max-w-[90%] sm:max-w-2xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-center w-full rounded-lg xs:rounded-xl sm:rounded-2xl px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-3 shadow-md transition-colors duration-300">
+                      <p className="whitespace-pre-wrap leading-relaxed text-[10px] xs:text-xs sm:text-sm wrap-break-word">{message.content}</p>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </AnimatePresence>
 
-            {isLoading && (
+            {/* Streaming bubble — live token-by-token rendering */}
+            {displayedText && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-start"
+              >
+                <div className="w-full py-1 xs:py-1.5 sm:py-2">
+                  <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-1.5">
+                    <img src="/favicon.svg" alt="GreenGPT" className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 rounded-full shrink-0" />
+                    <span className="text-[9px] xs:text-[10px] sm:text-xs font-semibold text-[#1f7a63] dark:text-[#2dd4a1]">GreenGPT</span>
+                  </div>
+                  <p className="whitespace-pre-wrap leading-relaxed text-[11px] xs:text-xs sm:text-sm text-gray-800 dark:text-gray-200 wrap-break-word pl-4 xs:pl-5 sm:pl-7">
+                    {(() => {
+                      const m = /\n?\*\*[Ee]xplore\s+[Mm]ore[:\*]*\*?\*?:?\s*\n/.exec(displayedText);
+                      return m ? displayedText.slice(0, m.index).trimEnd() : displayedText;
+                    })()}
+                    <span className="inline-block w-[2px] h-[1em] bg-[#1f7a63] dark:bg-[#2dd4a1] animate-pulse ml-0.5 align-middle" />
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Thinking dots — only while waiting for the first token */}
+            {isLoading && !streamingText && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -808,7 +1031,7 @@ export default function ChatPage() {
         )}
 
         {/* Input Area - ChatGPT style */}
-        <div className="shrink-0 bg-white dark:bg-gray-900 transition-colors duration-300 -mt-10 xs:-mt-14 sm:-mt-20 mb-2 xs:mb-3 sm:mb-4">
+        <div className="shrink-0 bg-white dark:bg-gray-900 transition-colors duration-300 pb-2 xs:pb-3 sm:pb-4 pt-1 sm:pt-2">
           <div className="max-w-3xl mx-auto px-2 xs:px-3 sm:px-4">
             <div className="relative">
               {/* Hidden file input */}
@@ -822,7 +1045,7 @@ export default function ChatPage() {
               />
 
               {/* Main input container - ChatGPT style */}
-              <div className="flex items-end gap-1.5 xs:gap-2 sm:gap-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl xs:rounded-2xl sm:rounded-3xl px-2 xs:px-3 sm:px-4 py-2 xs:py-2.5 sm:py-3 focus-within:border-[#1f7a63] dark:focus-within:border-[#2dd4a1] focus-within:ring-1 focus-within:ring-[#1f7a63]/20 dark:focus-within:ring-[#2dd4a1]/20 transition-all shadow-sm hover:shadow-md">
+              <div onClick={() => textareaRef.current?.focus()} className="flex items-end gap-1.5 xs:gap-2 sm:gap-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl xs:rounded-2xl sm:rounded-3xl px-2 xs:px-3 sm:px-4 py-2 xs:py-2.5 sm:py-3 focus-within:border-[#1f7a63] dark:focus-within:border-[#2dd4a1] focus-within:ring-1 focus-within:ring-[#1f7a63]/20 dark:focus-within:ring-[#2dd4a1]/20 transition-all shadow-sm hover:shadow-md cursor-text">
                 {/* File Upload Button */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -837,38 +1060,37 @@ export default function ChatPage() {
 
                 {/* Auto-growing Text Input */}
                 <textarea
+                  ref={textareaRef}
                   value={inputMessage}
                   onChange={(e) => {
                     setInputMessage(e.target.value);
                     e.target.style.height = 'auto';
                     e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
                   }}
-                  onKeyPress={(e) => {
+                  onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
                       handleSendMessage();
                     }
                   }}
-                  placeholder={isListening ? "Listening..." : "Message GreenGPT..."}
-                  disabled={isLoading || isListening}
+                  placeholder={isListening ? "Listening… tap mic to stop" : "Message GreenGPT..."}
+                  disabled={isLoading}
                   rows={1}
                   className="flex-1 bg-transparent text-sm xs:text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none resize-none max-h-50 overflow-y-auto disabled:opacity-50 py-1 xs:py-1.5 sm:py-1.5 leading-relaxed"
                   style={{ minHeight: '24px' }}
                 />
 
-                {/* Voice Input Button - Only show when no text */}
-                {!inputMessage.trim() && (
-                  <button
-                    onClick={handleVoiceInput}
-                    disabled={isLoading}
-                    className={`shrink-0 w-8 h-8 xs:w-9 xs:h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition-all ${isListening ? "bg-red-500 text-white animate-pulse" : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"} disabled:opacity-50`}
-                    title="Voice input"
-                  >
-                    <svg className="w-5 h-5 xs:w-5 xs:h-5 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    </svg>
-                  </button>
-                )}
+                {/* Voice Input Button - Always visible */}
+                <button
+                  onClick={handleVoiceInput}
+                  disabled={isLoading}
+                  className={`shrink-0 w-8 h-8 xs:w-9 xs:h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition-all ${isListening ? "bg-red-500 text-white animate-pulse" : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"} disabled:opacity-50`}
+                  title={isListening ? "Stop recording" : "Voice input"}
+                >
+                  <svg className="w-5 h-5 xs:w-5 xs:h-5 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </button>
 
                 {/* Send Button - ChatGPT style arrow */}
                 {inputMessage.trim() && (

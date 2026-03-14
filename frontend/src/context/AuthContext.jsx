@@ -237,6 +237,12 @@ export const AuthProvider = ({ children }) => {
     return !!idToken && !!user;
   };
 
+  // Always returns a fresh, valid token — use this for API calls instead of idToken
+  const getToken = async () => {
+    if (!auth.currentUser) return null;
+    return await auth.currentUser.getIdToken();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -249,6 +255,7 @@ export const AuthProvider = ({ children }) => {
         loginWithGoogle,
         logout,
         isAuthenticated,
+        getToken,
       }}
     >
       {children}

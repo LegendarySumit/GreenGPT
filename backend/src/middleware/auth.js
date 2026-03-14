@@ -23,7 +23,7 @@ export const protect = async (req, res, next) => {
       // Check if user exists in Firestore (must have signed up)
       const userDocSnap = await adminDb.collection('users').doc(decodedToken.uid).get();
       
-      if (!userDocSnap.exists()) {
+      if (!userDocSnap.exists) {
         return res.status(401).json({
           success: false,
           message: 'User not found. Please sign up first.'

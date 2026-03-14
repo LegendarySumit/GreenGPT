@@ -21,6 +21,34 @@ const buildModelFallbackChain = (requestedModel = "") => {
 
 // Generate content using Gemini API - returns raw response
 export const generateContent = async (prompt) => {
+  // Check if mock API is enabled
+  if (process.env.USE_MOCK_API === "true") {
+    console.log("[MOCK API] Returning mock response");
+    return {
+      candidates: [{
+        content: {
+          parts: [{
+            text: JSON.stringify({
+              summary: "This is a mock analysis of your environmental document.",
+              key_findings: [
+                "Environmental impact assessment completed",
+                "Carbon footprint analysis included",
+                "Sustainability metrics documented"
+              ],
+              recommendations: [
+                "Implement renewable energy sources",
+                "Reduce waste production",
+                "Monitor emission levels regularly"
+              ],
+              impact_score: 7.5,
+              status: "Mock Data"
+            })
+          }]
+        }
+      }]
+    };
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
   const modelPreference = process.env.GEMINI_MODEL || "gemini-1.5-flash";
   const baseUrl = process.env.GEMINI_API_URL || "https://generativelanguage.googleapis.com/v1beta";
@@ -44,14 +72,20 @@ export const generateContent = async (prompt) => {
             {
               parts: [{ text: prompt }]
             }
-          ]
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            topP: 0.85,
+            topK: 40,
+            maxOutputTokens: 900,
+          }
         },
         {
           headers: { "Content-Type": "application/json" },
           timeout: 30000 // 30 second timeout
         }
       );
-      
+
       return response.data;
     } catch (error) {
       const status = error.response?.status || 500;
@@ -87,8 +121,70 @@ export const generateText = async (prompt) => {
   return result.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
 };
 
+// Stream content from Gemini — calls onChunk(text) for each token, onDone() when complete
+export const streamContent = async (prompt, onChunk, onDone, onError) => {
+  const apiKey   = process.env.GEMINI_API_KEY;
+  const model    = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+  const baseUrl  = process.env.GEMINI_API_URL || "https://generativelanguage.googleapis.com/v1beta";
+
+  if (!apiKey) { onError(new Error("Gemini API key not configured")); return; }
+
+  const url = `${baseUrl}/models/${model}:streamGenerateContent?key=${apiKey}&alt=sse`;
+
+  try {
+    const response = await axios.post(
+      url,
+      { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, topP: 0.85, topK: 40, maxOutputTokens: 900 } },
+      { responseType: "stream", headers: { "Content-Type": "application/json" }, timeout: 60000 }
+    );
+
+    let buffer = "";
+
+    response.data.on("data", (chunk) => {
+      buffer += chunk.toString();
+      const lines = buffer.split("\n");
+      buffer = lines.pop(); // keep any incomplete line for next chunk
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const raw = line.slice(6).trim();
+        if (!raw) continue;
+        try {
+          const json = JSON.parse(raw);
+          const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) onChunk(text);
+        } catch { /* ignore parse errors on partial chunks */ }
+      }
+    });
+
+    response.data.on("end", () => {
+      // flush any remaining buffer
+      if (buffer.startsWith("data: ")) {
+        const raw = buffer.slice(6).trim();
+        try {
+          const json = JSON.parse(raw);
+          const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) onChunk(text);
+        } catch {}
+      }
+      onDone();
+    });
+
+    response.data.on("error", onError);
+  } catch (err) {
+    const msg = err.response?.data?.error?.message || err.message || "Stream failed";
+    onError(new Error(msg.replace(/key=[A-Za-z0-9_-]+/gi, "key=***")));
+  }
+};
+
 // Generate content with image using Gemini Vision
 export const generateContentWithImage = async (prompt, base64Image, mimeType) => {
+  // Check if mock API is enabled
+  if (process.env.USE_MOCK_API === "true") {
+    console.log("[MOCK API] Returning mock image analysis");
+    return "This is a mock analysis of your image. The system would have analyzed the visual content and provided detailed insights.";
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
   const modelPreference = process.env.GEMINI_MODEL || "gemini-1.5-flash";
   const baseUrl = process.env.GEMINI_API_URL || "https://generativelanguage.googleapis.com/v1beta";

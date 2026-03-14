@@ -6,7 +6,7 @@
 
 ![React](https://img.shields.io/badge/React-19.2.0-61DAFB?logo=react&logoColor=black)
 ![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=node.js&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?logo=mongodb&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-Firestore-FF6F00?logo=firebase&logoColor=white)
 ![Gemini](https://img.shields.io/badge/Google-Gemini_2.5-4285F4?logo=google&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Production_Ready-success)
 
@@ -48,7 +48,12 @@ GreenGPT transforms 500+ page environmental reports into structured, actionable 
   - **Timeline** (short-term vs long-term actions)
 
 ### 💬 Conversational AI Chat
-- Real-time environmental Q&A with context retention
+- Real-time token streaming via SSE with smooth character-drain animation
+- Markdown rendering — bullet lists, bold, headings, code blocks rendered live
+- Follow-up suggestion chips after every response ("Explore more")
+- Edit & Retry buttons on user messages for quick corrections
+- Smart auto-scroll — pauses when you scroll up, resumes on new messages
+- Voice input support for hands-free querying
 - Upload **images/videos/PDFs** directly in chat
 - Multi-session management (create, rename, delete, persist)
 - Specialized environmental knowledge base
@@ -67,8 +72,8 @@ GreenGPT transforms 500+ page environmental reports into structured, actionable 
 - **Enterprise ($99.99)** — Custom solutions, dedicated support, white-labeling
 
 ### 🔐 User Management
-- JWT authentication with MongoDB
-- Secure password hashing (bcrypt)
+- Firebase Authentication (Google OAuth + email/password)
+- Firestore-backed user profiles and session persistence
 - Profile management with tier display
 - Protected routes
 
@@ -157,18 +162,22 @@ Policymakers implement data-driven solutions immediately
 - **Tailwind CSS 4.x** — Utility-first styling
 - **Framer Motion 12.26.2** — Smooth animations
 - **React Router 7.2.0** — Navigation
+- **react-markdown + remark-gfm** — Markdown rendering in chat
 
 ### Backend
 - **Node.js + Express** — REST API
-- **MongoDB** — Flexible document storage
-- **JWT + bcryptjs** — Secure authentication
+- **Firebase Firestore** — Persistent chat session & history storage
+- **Firebase Authentication** — Google OAuth & email/password auth
 - **Multer** — File upload handling
 - **pdf-parse** — PDF text extraction
 
 ### AI Integration
 - **Google Gemini 2.5 Flash API** — Environmental intelligence
-- Custom environmental prompt engineering
-- Structured JSON output formatting
+- Custom environmental prompt engineering with topic-gating (off-topic auto-refused)
+- Few-Shot Prompting (FSP) for consistent format across all responses
+- Tuned `generationConfig`: `temperature: 0.2`, `topP: 0.85`, `topK: 40`, `maxOutputTokens: 900`
+- Adaptive format: bullet lists for how-to/causes/effects, paragraphs for definitions
+- Structured JSON output formatting for document analysis
 
 ---
 
@@ -176,7 +185,7 @@ Policymakers implement data-driven solutions immediately
 
 ### Prerequisites
 - Node.js 18+
-- MongoDB
+- Firebase project (Firestore + Authentication enabled)
 - Google Gemini API key
 
 ### Installation
@@ -190,8 +199,9 @@ npm install
 
 # Set up environment variables
 # Create .env file with:
-MONGO_URI=your_mongodb_uri
-JWT_SECRET=your_jwt_secret
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_PRIVATE_KEY=your_firebase_private_key
+FIREBASE_CLIENT_EMAIL=your_firebase_client_email
 GEMINI_API_KEY=your_gemini_api_key
 
 # Start development server
@@ -200,17 +210,16 @@ npm run dev
 
 ### Environment Variables
 ```env
-# Database
-MONGO_URI=mongodb://localhost:27017/greengpt
-
-# Authentication
-JWT_SECRET=your_super_secure_jwt_secret
+# Firebase
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_PRIVATE_KEY=your_firebase_private_key
+FIREBASE_CLIENT_EMAIL=your_firebase_client_email
 
 # AI Integration
 GEMINI_API_KEY=your_google_gemini_api_key
 
 # Server
-PORT=5000
+PORT=5001
 ```
 
 ---
@@ -295,7 +304,7 @@ GreenGPT is configured for production-ready deployment:
 - Regional context (Diwali pollution spikes, monsoon effects)
 
 ### 4. Enterprise-Ready
-- MongoDB scalability
+- Firebase Firestore scalability
 - Government firewall deployment
 - Auditable analysis logs
 - Team collaboration features
@@ -356,7 +365,7 @@ This project is for educational and environmental purposes.
 ## 🙏 Acknowledgments
 
 - Google Gemini AI for environmental intelligence
-- MongoDB for scalable data storage
+- Firebase for auth and scalable data storage
 - Environmental professionals for domain insights
 - Open source community for tools and libraries
 
