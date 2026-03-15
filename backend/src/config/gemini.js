@@ -1,5 +1,13 @@
 import axios from "axios";
 
+class GeminiRequestError extends Error {
+  constructor(message, statusCode = 500) {
+    super(message);
+    this.name = "GeminiRequestError";
+    this.statusCode = statusCode;
+  }
+}
+
 // Helper function to sanitize error messages (remove API key)
 const sanitizeError = (error) => {
   const message = error.response?.data?.error?.message || error.message || "AI request failed";
@@ -54,7 +62,7 @@ export const generateContent = async (prompt, configOverride = {}) => {
   const baseUrl = process.env.GEMINI_API_URL || "https://generativelanguage.googleapis.com/v1beta";
   
   if (!apiKey) {
-    throw new Error("Gemini API key is not configured");
+    throw new GeminiRequestError("GEMINI_API_KEY is not configured on the server", 503);
   }
 
   const modelsToTry = buildModelFallbackChain(modelPreference);
@@ -83,7 +91,7 @@ export const generateContent = async (prompt, configOverride = {}) => {
         },
         {
           headers: { "Content-Type": "application/json" },
-          timeout: 30000 // 30 second timeout
+          timeout: 60000 // 60 second timeout
         }
       );
 
@@ -104,16 +112,16 @@ export const generateContent = async (prompt, configOverride = {}) => {
 
       // If it's the last model or a different error, throw
       const sanitizedMessage = sanitizeError(error);
-      throw new Error(sanitizedMessage);
+      throw new GeminiRequestError(sanitizedMessage, 502);
     }
   }
 
   if (lastError) {
     const sanitizedMessage = sanitizeError(lastError);
-    throw new Error(sanitizedMessage);
+    throw new GeminiRequestError(sanitizedMessage, 502);
   }
 
-  throw new Error("All model attempts failed");
+  throw new GeminiRequestError("All model attempts failed", 502);
 };
 
 // Generate text content using Gemini API - returns just the text
@@ -221,7 +229,7 @@ export const generateContentWithImage = async (prompt, base64Image, mimeType) =>
         },
         {
           headers: { "Content-Type": "application/json" },
-          timeout: 30000 // 30 second timeout
+          timeout: 60000 // 60 second timeout
         }
       );
       

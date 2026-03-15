@@ -13,5 +13,11 @@ services:
         scope: run
       - key: FIREBASE_SERVICE_ACCOUNT
         scope: run
+      - key: GEMINI_API_KEY
+        scope: run
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_API_URL
+        value: https://generativelanguage.googleapis.com/v1beta
       - key: FRONTEND_URL
         value: https://greengpt.vercel.app

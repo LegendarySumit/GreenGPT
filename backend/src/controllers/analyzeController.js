@@ -31,7 +31,12 @@ export const analyzeDocument = async (req, res) => {
     console.error("GEMINI ERROR:", error.message);
     let errorMessage = error.message || "AI analysis failed";
     errorMessage = errorMessage.replace(/key=[A-Za-z0-9_-]+/gi, "key=***HIDDEN***");
-    res.status(500).json({ success: false, error: errorMessage });
+    const statusCode = Number.isInteger(error.statusCode)
+      ? error.statusCode
+      : Number.isInteger(error.status)
+        ? error.status
+        : 500;
+    res.status(statusCode).json({ success: false, error: errorMessage });
   }
 };
 
