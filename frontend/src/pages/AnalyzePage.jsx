@@ -32,12 +32,19 @@ export default function AnalyzePage() {
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/analyze`,
         formData,
-        { headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` } }
+        {
+          headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
+          timeout: 90000,
+        }
       );
       saveAnalysis(res.data.analysis, file.name, file.size);
       navigate("/results");
     } catch (err) {
-      setError(err.response?.data?.error || "Analysis failed. Please try again.");
+      if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+        setError("Request timed out — the server may be waking up. Please try again in a few seconds.");
+      } else {
+        setError(err.response?.data?.error || err.response?.data?.message || "Analysis failed. Please try again.");
+      }
     }
     setLoading(false);
   };
@@ -74,7 +81,7 @@ export default function AnalyzePage() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-lg px-6 py-4 flex items-start gap-3 mb-6"
           >
-            <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
             <p className="text-sm text-red-700 dark:text-red-300 font-medium">{error}</p>
@@ -96,7 +103,7 @@ export default function AnalyzePage() {
                 <svg className="w-4 h-4 text-[#1f7a63] dark:text-[#2dd4a1]" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <span>This usually takes 10–30 seconds</span>
+                <span>This usually takes 15–45 seconds. First request may take longer.</span>
               </div>
             </div>
           </motion.div>
