@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 
@@ -13,8 +13,14 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("");
   const [resetStatus, setResetStatus] = useState({ type: "", message: "" });
   const [resetLoading, setResetLoading] = useState(false);
-  const { login, resetPassword } = useAuth();
+  const { user, loading: authLoading, login, resetPassword } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate("/", { replace: true });
+    }
+  }, [authLoading, user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,7 +36,7 @@ export default function LoginPage() {
     const result = await login(email, password);
 
     if (result.success) {
-      navigate("/dashboard");
+      navigate("/", { replace: true });
     } else {
       setError(result.message);
     }

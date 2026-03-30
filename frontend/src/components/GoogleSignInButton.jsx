@@ -18,7 +18,7 @@ export default function GoogleSignInButton({ isSignup = false }) {
       const result = await authFunction();
 
       if (result.success) {
-        navigate("/dashboard");
+        navigate("/", { replace: true });
       } else {
         setError(result.message || (isSignup ? "Google sign-up failed. Please try again." : "Google sign-in failed. Please try again."));
       }
