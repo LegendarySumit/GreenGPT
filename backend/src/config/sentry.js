@@ -2,6 +2,22 @@ import * as Sentry from "@sentry/node";
 
 let sentryEnabled = false;
 
+const getSentryHandlers = () => {
+  const handlers = Sentry?.Handlers;
+  if (!handlers) {
+    return null;
+  }
+
+  const hasRequestHandler = typeof handlers.requestHandler === "function";
+  const hasErrorHandler = typeof handlers.errorHandler === "function";
+
+  if (!hasRequestHandler || !hasErrorHandler) {
+    return null;
+  }
+
+  return handlers;
+};
+
 export const initSentry = () => {
   const dsn = process.env.SENTRY_DSN;
   if (!dsn) return { enabled: false };
@@ -19,11 +35,15 @@ export const initSentry = () => {
 export const sentryHandlers = {
   requestHandler: () => (req, res, next) => {
     if (!sentryEnabled) return next();
-    return Sentry.Handlers.requestHandler()(req, res, next);
+    const handlers = getSentryHandlers();
+    if (!handlers) return next();
+    return handlers.requestHandler()(req, res, next);
   },
   errorHandler: () => (err, req, res, next) => {
     if (!sentryEnabled) return next(err);
-    return Sentry.Handlers.errorHandler()(err, req, res, next);
+    const handlers = getSentryHandlers();
+    if (!handlers) return next(err);
+    return handlers.errorHandler()(err, req, res, next);
   },
 };
 

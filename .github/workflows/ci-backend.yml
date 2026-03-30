@@ -121,8 +121,13 @@ jobs:
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_PREVIEW_DEPLOY_HOOK }}
         run: |
-          if [ ! -z "$RENDER_DEPLOY_HOOK" ]; then
-            curl -X POST "$RENDER_DEPLOY_HOOK"
+          DEPLOY_HOOK=$(printf '%s' "$RENDER_DEPLOY_HOOK" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          if [ -n "$DEPLOY_HOOK" ]; then
+            if [[ "$DEPLOY_HOOK" != https://api.render.com/deploy/* ]]; then
+              echo "Invalid RENDER_PREVIEW_DEPLOY_HOOK format"
+              exit 1
+            fi
+            curl --fail --show-error --silent -X POST "$DEPLOY_HOOK"
             echo "Preview deployment triggered"
           else
             echo "RENDER_PREVIEW_DEPLOY_HOOK not configured, skipping"
@@ -151,8 +156,13 @@ jobs:
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_PRODUCTION_DEPLOY_HOOK }}
         run: |
-          if [ ! -z "$RENDER_DEPLOY_HOOK" ]; then
-            curl -X POST "$RENDER_DEPLOY_HOOK"
+          DEPLOY_HOOK=$(printf '%s' "$RENDER_DEPLOY_HOOK" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+          if [ -n "$DEPLOY_HOOK" ]; then
+            if [[ "$DEPLOY_HOOK" != https://api.render.com/deploy/* ]]; then
+              echo "Invalid RENDER_PRODUCTION_DEPLOY_HOOK format"
+              exit 1
+            fi
+            curl --fail --show-error --silent -X POST "$DEPLOY_HOOK"
             echo "Production deployment triggered"
           else
             echo "RENDER_PRODUCTION_DEPLOY_HOOK not configured, skipping"
