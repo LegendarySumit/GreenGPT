@@ -451,17 +451,34 @@ export default function ChatPage() {
 
     try {
       const token = await getToken();
+      const safeConversationHistory = baseMessages
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .slice(-10)
+        .map((m) => ({
+          role: m.role,
+          content: String(m.content || "").slice(0, 3900),
+        }));
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           message: sentMessage,
           files: uploadedFiles.map(f => ({ name: f.name, content: f.content })),
-          conversationHistory: baseMessages.slice(-10).map(m => ({ role: m.role, content: m.content }))
+          conversationHistory: safeConversationHistory
         })
       });
 
-      if (!response.ok) throw new Error(`Server error ${response.status}`);
+      if (!response.ok) {
+        let serverMessage = `Server error ${response.status}`;
+        try {
+          const errPayload = await response.json();
+          serverMessage = errPayload?.message || serverMessage;
+        } catch {
+          // Ignore parse failure and keep generic status message.
+        }
+        throw new Error(serverMessage);
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
