@@ -782,7 +782,7 @@ export default function ChatPage() {
             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
 
               {/* Icon */}
-              <div className="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-[#1f7a63] to-[#2dd4a1] flex items-center justify-center shadow-sm">
+              <div className="shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-linear-to-br from-[#1f7a63] to-[#2dd4a1] flex items-center justify-center shadow-sm">
                 <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-4 4z" />
                 </svg>
@@ -810,7 +810,7 @@ export default function ChatPage() {
                       <svg className="w-3 h-3 text-[#1f7a63] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <span className="text-[10px] sm:text-xs text-[#1f7a63] font-medium truncate max-w-[80px] sm:max-w-none">{file.name}</span>
+                      <span className="text-[10px] sm:text-xs text-[#1f7a63] font-medium truncate max-w-20 sm:max-w-none">{file.name}</span>
                     </div>
                   ))}
                 </div>
@@ -998,7 +998,7 @@ export default function ChatPage() {
                       const m = /\n?\*\*[Ee]xplore\s+[Mm]ore[:*]*\*?\*?:?\s*\n/.exec(displayedText);
                       return m ? displayedText.slice(0, m.index).trimEnd() : displayedText;
                     })()}
-                    <span className="inline-block w-[2px] h-[1em] bg-[#1f7a63] dark:bg-[#2dd4a1] animate-pulse ml-0.5 align-middle" />
+                    <span className="inline-block w-0.5 h-[1em] bg-[#1f7a63] dark:bg-[#2dd4a1] animate-pulse ml-0.5 align-middle" />
                   </p>
                 </div>
               </motion.div>
@@ -1140,3 +1140,4 @@ export default function ChatPage() {
     </div>
   );
 }
+

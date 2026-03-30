@@ -65,7 +65,7 @@ export default function LoginPage() {
           alt="Nature background"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-slate-900/70 to-[#1f7a63]/40"></div>
+        <div className="absolute inset-0" style={{ backgroundImage: "linear-gradient(to bottom right, rgb(0 0 0 / 0.6), rgb(15 23 42 / 0.7), rgb(31 122 99 / 0.4))" }}></div>
       </div>
 
       {/* Animated Background Elements */}
@@ -108,7 +108,7 @@ export default function LoginPage() {
           repeat: Infinity,
           ease: "linear"
         }}
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 sm:w-[600px] h-72 sm:h-[600px] bg-white/5 rounded-full blur-3xl"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 sm:w-[599px] h-72 sm:h-[599px] bg-white/5 rounded-full blur-3xl"
       />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -243,7 +243,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#155744] hover:to-[#1f7a63] text-white font-bold rounded-xl transition-all duration-300 text-lg shadow-lg hover:shadow-2xl hover:shadow-[#2dd4a1]/30 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-[#1f7a63] hover:bg-[#155744] text-white font-bold rounded-xl transition-all duration-300 text-lg shadow-lg hover:shadow-2xl hover:shadow-[#2dd4a1]/30 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>
@@ -272,3 +272,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+

@@ -286,7 +286,7 @@ export default function LandingPage() {
             className="w-full h-full object-cover"
           />
           {/* Dark overlay for better text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"></div>
+          <div className="absolute inset-0 bg-linear-to-b from-black/60 via-black/50 to-black/70"></div>
         </div>
 
         {/* Hero Content */}
@@ -365,14 +365,14 @@ export default function LandingPage() {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: card.delay + 0.3, type: "spring" }}
-                        className="absolute -top-2 sm:-top-3 -right-2 sm:-right-3 px-2 sm:px-3 py-1 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] text-white text-xs font-bold rounded-full shadow-lg"
+                        className="absolute -top-2 sm:-top-3 -right-2 sm:-right-3 px-2 sm:px-3 py-1 bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] text-white text-xs font-bold rounded-full shadow-lg"
                       >
                         {card.badge}
                       </motion.div>
                     )}
 
                     {/* Icon with Subtle Background */}
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#1f7a63] to-[#2dd4a1] flex items-center justify-center mb-4 sm:mb-6 text-white shadow-lg group-hover:scale-105 transition-all duration-300 flex-shrink-0">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl sm:rounded-2xl bg-linear-to-br from-[#1f7a63] to-[#2dd4a1] flex items-center justify-center mb-4 sm:mb-6 text-white shadow-lg group-hover:scale-105 transition-all duration-300 shrink-0">
                       <svg className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         {card.icon}
                       </svg>
@@ -382,7 +382,7 @@ export default function LandingPage() {
                     <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white dark:text-white mb-3 sm:mb-4 flex items-center justify-between">
                       <span className="pr-2">{card.title}</span>
                       <svg 
-                        className="w-5 h-5 sm:w-6 sm:h-6 transform group-hover:translate-x-2 transition-transform duration-300 flex-shrink-0" 
+                        className="w-5 h-5 sm:w-6 sm:h-6 transform group-hover:translate-x-2 transition-transform duration-300 shrink-0" 
                         fill="currentColor" 
                         viewBox="0 0 20 20"
                       >
@@ -391,7 +391,7 @@ export default function LandingPage() {
                     </h3>
 
                     {/* Description */}
-                    <p className="text-sm sm:text-base text-gray-200 dark:text-gray-300 leading-relaxed flex-grow">
+                    <p className="text-sm sm:text-base text-gray-200 dark:text-gray-300 leading-relaxed grow">
                       {card.description}
                     </p>
                   </div>
@@ -452,7 +452,7 @@ export default function LandingPage() {
             alt="Conservation background"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/50"></div>
+          <div className="absolute inset-0 bg-linear-to-r from-black/70 to-black/50"></div>
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
@@ -549,7 +549,7 @@ export default function LandingPage() {
                 whileHover={{ y: -10 }}
                 className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl p-6 sm:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200/50 dark:border-gray-700/50"
               >
-                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-gradient-to-br from-[#1f7a63] to-[#2dd4a1] rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-linear-to-br from-[#1f7a63] to-[#2dd4a1] rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
                   <svg className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={step.icon} />
                   </svg>
@@ -568,7 +568,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Tiers Section */}
-      <section className="py-12 sm:py-16 bg-gradient-to-b from-white via-gray-50 to-white dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 relative overflow-hidden">
+      <section className="py-12 sm:py-16 bg-linear-to-b from-white via-gray-50 to-white dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 relative overflow-hidden">
         {/* Background decorative elements */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-20 left-10 w-48 sm:w-64 h-48 sm:h-64 bg-[#2dd4a1] rounded-full filter blur-3xl"></div>
@@ -656,22 +656,22 @@ export default function LandingPage() {
               >
                 {/* Popular badge */}
                 {plan.popular && (
-                  <div className="absolute -top-[8px] left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 w-full flex justify-center px-4 sm:px-0 sm:w-auto">
-                    <div className="px-5 py-1.5 bg-gradient-to-r from-[#2dd4a1] to-[#1f7a63] text-white text-xs font-bold rounded-full shadow-lg text-center">
+                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 w-full flex justify-center px-4 sm:px-0 sm:w-auto">
+                    <div className="px-5 py-1.5 bg-linear-to-r from-[#2dd4a1] to-[#1f7a63] text-white text-xs font-bold rounded-full shadow-lg text-center">
                       MOST POPULAR
                     </div>
                   </div>
                 )}
 
                 {/* Card with glassmorphism - Fixed height */}
-                <div className={`flex flex-col backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border-2 h-[480px] ${
+                <div className={`flex flex-col backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border-2 h-120 ${
                   plan.popular 
                     ? 'border-[#2dd4a1] bg-white/90 dark:bg-gray-800/90 scale-105' 
                     : 'border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-800/70 hover:border-[#2dd4a1]/50'
                 }`}>
                   
                   {/* Gradient header */}
-                  <div className={`bg-gradient-to-br ${plan.popular ? 'from-[#1f7a63] to-[#155744]' : 'from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900'} px-6 py-6 text-center ${plan.popular ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                  <div className={`bg-linear-to-br ${plan.popular ? 'from-[#1f7a63] to-[#155744]' : 'from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900'} px-6 py-6 text-center ${plan.popular ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                     <h3 className="text-xl font-bold mb-1">{plan.name}</h3>
                     <p className={`text-xs mb-4 ${plan.popular ? 'text-white/90' : 'text-gray-600 dark:text-gray-400'}`}>
                       {plan.description}
@@ -684,12 +684,12 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  {/* Features list - flex-grow to fill space */}
-                  <div className="flex flex-col flex-grow px-6 py-5">
-                    <ul className="space-y-2.5 flex-grow mb-5">
+                  {/* Features list - grow to fill space */}
+                  <div className="flex flex-col grow px-6 py-5">
+                    <ul className="space-y-2.5 grow mb-5">
                       {plan.features.map((feature, featureIdx) => (
                         <li key={featureIdx} className="flex items-start gap-2">
-                          <svg className="w-5 h-5 text-[#2dd4a1] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-5 h-5 text-[#2dd4a1] shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
                           <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
@@ -702,8 +702,8 @@ export default function LandingPage() {
                       onClick={() => handlePlanSelection(plan.id, plan.name, plan.price)}
                       className={`block w-full py-3 rounded-xl font-semibold text-center text-sm transition-all duration-300 transform group-hover:scale-105 ${
                         plan.popular
-                          ? 'bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#2dd4a1] hover:to-[#1f7a63] text-white shadow-lg hover:shadow-xl'
-                          : 'bg-gray-100 dark:bg-gray-700 hover:bg-gradient-to-r hover:from-[#1f7a63] hover:to-[#2dd4a1] text-gray-900 dark:text-white hover:text-white'
+                          ? 'bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#2dd4a1] hover:to-[#1f7a63] text-white shadow-lg hover:shadow-xl'
+                          : 'bg-gray-100 dark:bg-gray-700 hover:bg-linear-to-r hover:from-[#1f7a63] hover:to-[#2dd4a1] text-gray-900 dark:text-white hover:text-white'
                       }`}
                     >
                       {plan.buttonText}
@@ -711,7 +711,7 @@ export default function LandingPage() {
                   </div>
 
                   {/* Glassmorphism overlay effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
+                  <div className="absolute inset-0 bg-linear-to-br from-white/5 to-transparent pointer-events-none"></div>
                 </div>
               </motion.div>
             ))}
@@ -751,7 +751,7 @@ export default function LandingPage() {
       </section>
 
       {/* Use Cases - Themes Section */}
-      <section className="py-20 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+      <section className="py-20 bg-linear-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -801,7 +801,7 @@ export default function LandingPage() {
                   {/* Circular Image */}
                   <div className="flex justify-center pt-8 pb-6">
                     <div className="relative">
-                      <div className={`absolute inset-0 bg-gradient-to-br ${useCase.color} rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity`}></div>
+                      <div className={`absolute inset-0 bg-linear-to-br ${useCase.color} rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity`}></div>
                       <img
                         src={useCase.image}
                         alt={useCase.title}
@@ -811,16 +811,16 @@ export default function LandingPage() {
                   </div>
 
                   {/* Content */}
-                  <div className="px-8 pb-8 text-center flex flex-col flex-grow">
+                  <div className="px-8 pb-8 text-center flex flex-col grow">
                     <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                       {useCase.title}
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6 flex-grow">
+                    <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6 grow">
                       {useCase.description}
                     </p>
                     <Link
                       to="/analyze"
-                      className="inline-block px-6 py-3 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#2dd4a1] hover:to-[#1f7a63] text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="inline-block px-6 py-3 bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#2dd4a1] hover:to-[#1f7a63] text-white rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                     >
                       Try Analysis
                     </Link>
@@ -874,7 +874,7 @@ export default function LandingPage() {
                         alt={story.title}
                         className="w-full h-full object-cover"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                      <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"></div>
                       <div className="absolute bottom-4 left-4">
                         <span className="px-3 py-1.5 bg-[#2dd4a1]/90 backdrop-blur-sm text-white text-xs font-semibold rounded-full">
                           {story.tag}
@@ -883,7 +883,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Content */}
-                    <div className="p-6 flex flex-col flex-grow">
+                    <div className="p-6 flex flex-col grow">
                       <div className="flex items-center gap-2 mb-3">
                         <svg className="w-4 h-4 text-[#2dd4a1]" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -893,7 +893,7 @@ export default function LandingPage() {
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-[#1f7a63] dark:group-hover:text-[#2dd4a1] transition-colors">
                         {story.title}
                       </h3>
-                      <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-4 flex-grow text-sm">
+                      <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-4 grow text-sm">
                         {story.description}
                       </p>
                       <button
@@ -919,7 +919,7 @@ export default function LandingPage() {
                 style={{ transform: `translateX(-${currentSlide * 100}%)` }}
               >
                 {Array.from({ length: totalSlides }).map((_, slideIdx) => (
-                  <div key={slideIdx} className="w-full flex-shrink-0 px-4">
+                  <div key={slideIdx} className="w-full shrink-0 px-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-8">
                       {successStories
                         .slice(slideIdx * itemsPerSlide, (slideIdx + 1) * itemsPerSlide)
@@ -944,7 +944,7 @@ export default function LandingPage() {
                                 alt={story.title}
                                 className="w-full h-full object-cover"
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                              <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"></div>
                               <div className="absolute bottom-4 left-4">
                                 <span className="px-3 py-1.5 bg-[#2dd4a1]/90 backdrop-blur-sm text-white text-xs font-semibold rounded-full">
                                   {story.tag}
@@ -953,7 +953,7 @@ export default function LandingPage() {
                             </div>
 
                             {/* Content */}
-                            <div className="p-6 flex flex-col flex-grow">
+                            <div className="p-6 flex flex-col grow">
                               <div className="flex items-center gap-2 mb-3">
                                 <svg className="w-4 h-4 text-[#2dd4a1]" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -963,7 +963,7 @@ export default function LandingPage() {
                               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-[#1f7a63] dark:group-hover:text-[#2dd4a1] transition-colors">
                                 {story.title}
                               </h3>
-                              <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-4 flex-grow text-sm">
+                              <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-4 grow text-sm">
                                 {story.description}
                               </p>
                               <button
@@ -1025,7 +1025,7 @@ export default function LandingPage() {
       </section>
 
       {/* Magazine-Style Hero Section - GreenGPT Insights */}
-      <section id="case-studies-section" className="relative min-h-[400px] sm:min-h-[450px] md:min-h-[550px] flex items-center justify-center overflow-hidden py-12 sm:py-16">
+      <section id="case-studies-section" className="relative min-h-100 sm:min-h-112.5 md:min-h-137.5 flex items-center justify-center overflow-hidden py-12 sm:py-16">
         {/* Background Image */}
         <div className="absolute inset-0">
           <img
@@ -1105,7 +1105,7 @@ export default function LandingPage() {
                   alt={item.title}
                   className="w-full h-64 object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1f7a63]/90 via-[#1f7a63]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-end p-6 text-center">
+                <div className="absolute inset-0 bg-linear-to-t from-[#1f7a63]/90 via-[#1f7a63]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-end p-6 text-center">
                   <span className="px-3 py-1 bg-[#2dd4a1] text-white text-xs font-semibold rounded-full mb-2">
                     {item.category}
                   </span>
@@ -1153,10 +1153,10 @@ export default function LandingPage() {
       </section>
 
       {/* Split-Screen Feature Section 1 */}
-      <section className="relative min-h-[400px] md:min-h-[500px] flex items-center overflow-hidden">
+      <section className="relative min-h-100 md:min-h-125 flex items-center overflow-hidden">
         <div className="w-full flex flex-col md:grid md:grid-cols-2">
           {/* Text Side */}
-          <div className="bg-gradient-to-br from-[#1f7a63] to-[#155744] flex items-center justify-center p-6 sm:p-8 md:p-12 order-2 md:order-1">
+          <div className="bg-linear-to-br from-[#1f7a63] to-[#155744] flex items-center justify-center p-6 sm:p-8 md:p-12 order-2 md:order-1">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -1193,13 +1193,13 @@ export default function LandingPage() {
               alt="Ocean conservation"
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#1f7a63]/30 to-transparent"></div>
+            <div className="absolute inset-0 bg-linear-to-r from-[#1f7a63]/30 to-transparent"></div>
           </motion.div>
         </div>
       </section>
 
       {/* Split-Screen Feature Section 2 - Reversed */}
-      <section className="relative min-h-[400px] md:min-h-[500px] flex items-center overflow-hidden">
+      <section className="relative min-h-100 md:min-h-125 flex items-center overflow-hidden">
         <div className="w-full flex flex-col md:grid md:grid-cols-2">
           {/* Image Side */}
           <motion.div
@@ -1214,11 +1214,11 @@ export default function LandingPage() {
               alt="Forest landscape"
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-l from-[#2dd4a1]/30 to-transparent"></div>
+            <div className="absolute inset-0 bg-linear-to-l from-[#2dd4a1]/30 to-transparent"></div>
           </motion.div>
 
           {/* Text Side */}
-          <div className="bg-gradient-to-br from-[#2dd4a1] to-[#1f7a63] flex items-center justify-center p-6 sm:p-8 md:p-12 order-2">
+          <div className="bg-linear-to-br from-[#2dd4a1] to-[#1f7a63] flex items-center justify-center p-6 sm:p-8 md:p-12 order-2">
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -1245,7 +1245,7 @@ export default function LandingPage() {
       </section>
 
       {/* Environmental Impact Statistics Section */}
-      <section className="py-16 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 relative overflow-hidden">
+      <section className="py-16 bg-linear-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 relative overflow-hidden">
         {/* Subtle Background Pattern */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#2dd4a1] rounded-full filter blur-3xl"></div>
@@ -1319,12 +1319,12 @@ export default function LandingPage() {
               >
                 <div className="relative bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 h-full flex flex-col items-center text-center">
                   {/* Icon Container */}
-                  <div className="mb-4 p-3 bg-gradient-to-br from-[#1f7a63]/10 to-[#2dd4a1]/10 dark:from-[#1f7a63]/20 dark:to-[#2dd4a1]/20 rounded-xl text-[#1f7a63] dark:text-[#2dd4a1] group-hover:scale-110 transition-transform duration-300">
+                  <div className="mb-4 p-3 bg-linear-to-br from-[#1f7a63]/10 to-[#2dd4a1]/10 dark:from-[#1f7a63]/20 dark:to-[#2dd4a1]/20 rounded-xl text-[#1f7a63] dark:text-[#2dd4a1] group-hover:scale-110 transition-transform duration-300">
                     {stat.icon}
                   </div>
                   
                   {/* Number */}
-                  <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] bg-clip-text text-transparent mb-2">
+                  <div className="text-4xl md:text-5xl font-bold bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] bg-clip-text text-transparent mb-2">
                     {stat.number}
                   </div>
                   
@@ -1371,7 +1371,7 @@ export default function LandingPage() {
       </section>
 
       {/* Enhanced Ready to Get Started Section */}
-      <section className="py-20 bg-gradient-to-br from-[#1a5d4a] to-[#0f3d2f]">
+      <section className="py-20 bg-linear-to-br from-[#1a5d4a] to-[#0f3d2f]">
         <div className="max-w-6xl mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -1509,7 +1509,7 @@ export default function LandingPage() {
                   alt={selectedCaseStudy.title}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent"></div>
                 <button
                   onClick={() => setSelectedCaseStudy(null)}
                   className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all hover:scale-110"
@@ -1580,9 +1580,9 @@ export default function LandingPage() {
                 </div>
 
                 {/* Impact Badge */}
-                <div className="p-4 bg-gradient-to-r from-[#1f7a63]/10 to-[#2dd4a1]/10 dark:from-[#1f7a63]/20 dark:to-[#2dd4a1]/20 rounded-xl border border-[#2dd4a1]/30 mb-6">
+                <div className="p-4 bg-linear-to-r from-[#1f7a63]/10 to-[#2dd4a1]/10 dark:from-[#1f7a63]/20 dark:to-[#2dd4a1]/20 rounded-xl border border-[#2dd4a1]/30 mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-[#1f7a63] to-[#2dd4a1] rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 bg-linear-to-br from-[#1f7a63] to-[#2dd4a1] rounded-full flex items-center justify-center shrink-0">
                       <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
@@ -1600,7 +1600,7 @@ export default function LandingPage() {
                 <div className="flex gap-3">
                   <Link
                     to="/analyze"
-                    className="flex-1 px-5 py-3 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#2dd4a1] hover:to-[#1f7a63] text-white rounded-xl font-semibold text-center transition-all transform hover:scale-105 shadow-lg text-sm"
+                    className="flex-1 px-5 py-3 bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#2dd4a1] hover:to-[#1f7a63] text-white rounded-xl font-semibold text-center transition-all transform hover:scale-105 shadow-lg text-sm"
                   >
                     Start Your Analysis
                   </Link>
@@ -1670,7 +1670,7 @@ export default function LandingPage() {
                   {selectedGalleryImage.description}
                 </p>
 
-                <div className="p-4 bg-gradient-to-r from-[#1f7a63]/10 to-[#2dd4a1]/10 dark:from-[#1f7a63]/20 dark:to-[#2dd4a1]/20 rounded-xl border border-[#2dd4a1]/30 mb-6">
+                <div className="p-4 bg-linear-to-r from-[#1f7a63]/10 to-[#2dd4a1]/10 dark:from-[#1f7a63]/20 dark:to-[#2dd4a1]/20 rounded-xl border border-[#2dd4a1]/30 mb-6">
                   <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Environmental Impact</div>
                   <div className="text-lg font-bold text-gray-900 dark:text-white">
                     {selectedGalleryImage.impact}
@@ -1680,7 +1680,7 @@ export default function LandingPage() {
                 <div className="flex gap-4">
                   <Link
                     to="/analyze"
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#2dd4a1] hover:to-[#1f7a63] text-white rounded-xl font-semibold text-center transition-all transform hover:scale-105"
+                    className="flex-1 px-6 py-3 bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#2dd4a1] hover:to-[#1f7a63] text-white rounded-xl font-semibold text-center transition-all transform hover:scale-105"
                   >
                     Analyze Similar Project
                   </Link>
@@ -1712,7 +1712,7 @@ export default function LandingPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="relative bg-gradient-to-r from-[#1f7a63] to-[#155744] p-8">
+            <div className="relative bg-linear-to-r from-[#1f7a63] to-[#155744] p-8">
               <button
                 onClick={() => setShowCaseStudySelector(false)}
                 className="absolute top-6 right-6 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all hover:scale-110"
@@ -1743,7 +1743,7 @@ export default function LandingPage() {
                       setShowCaseStudySelector(false);
                       setSelectedCaseStudy(story);
                     }}
-                    className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-600 hover:border-[#2dd4a1] transition-all cursor-pointer group"
+                    className="bg-linear-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-600 hover:border-[#2dd4a1] transition-all cursor-pointer group"
                   >
                     {/* Image */}
                     <div className="relative h-48 overflow-hidden">
@@ -1752,7 +1752,7 @@ export default function LandingPage() {
                         alt={story.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                      <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent"></div>
                       <span className="absolute top-3 left-3 px-3 py-1.5 bg-[#2dd4a1] text-white text-xs font-semibold rounded-full">
                         {story.tag}
                       </span>
@@ -1804,7 +1804,7 @@ export default function LandingPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="relative bg-gradient-to-r from-[#1f7a63] to-[#155744] p-8">
+            <div className="relative bg-linear-to-r from-[#1f7a63] to-[#155744] p-8">
               <button
                 onClick={() => setShowGallerySelector(false)}
                 className="absolute top-6 right-6 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all hover:scale-110"
@@ -1835,7 +1835,7 @@ export default function LandingPage() {
                       setShowGallerySelector(false);
                       setSelectedGalleryImage(item);
                     }}
-                    className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-600 hover:border-[#2dd4a1] transition-all cursor-pointer group"
+                    className="bg-linear-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-600 hover:border-[#2dd4a1] transition-all cursor-pointer group"
                   >
                     {/* Image */}
                     <div className="relative h-48 overflow-hidden">
@@ -1844,7 +1844,7 @@ export default function LandingPage() {
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                      <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent"></div>
                       <span className="absolute top-3 left-3 px-3 py-1.5 bg-[#2dd4a1] text-white text-xs font-semibold rounded-full">
                         {item.category}
                       </span>
@@ -1899,7 +1899,7 @@ export default function LandingPage() {
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 relative overflow-hidden"
           >
             {/* Success Animation Background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#2dd4a1]/10 to-[#1f7a63]/10 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-linear-to-br from-[#2dd4a1]/10 to-[#1f7a63]/10 pointer-events-none"></div>
             
             {/* Content */}
             <div className="relative z-10 text-center">
@@ -1908,7 +1908,7 @@ export default function LandingPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="w-20 h-20 bg-gradient-to-br from-[#2dd4a1] to-[#1f7a63] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
+                className="w-20 h-20 bg-linear-to-br from-[#2dd4a1] to-[#1f7a63] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
               >
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
@@ -1960,7 +1960,7 @@ export default function LandingPage() {
                   setShowSuccessModal(false);
                   navigate('/profile');
                 }}
-                className="w-full px-6 py-3 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#2dd4a1] hover:to-[#1f7a63] text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
+                className="w-full px-6 py-3 bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#2dd4a1] hover:to-[#1f7a63] text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
               >
                 Go to Profile
               </motion.button>
@@ -1971,3 +1971,4 @@ export default function LandingPage() {
     </div>
   );
 }
+

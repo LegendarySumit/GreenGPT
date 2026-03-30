@@ -146,7 +146,7 @@ export default function Footer() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="relative bg-gradient-to-r from-[#1f7a63] to-[#155744] p-8">
+            <div className="relative bg-linear-to-r from-[#1f7a63] to-[#155744] p-8">
               <button
                 onClick={() => setShowSupportModal(false)}
                 className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all"
@@ -198,7 +198,7 @@ export default function Footer() {
                     <Link
                       to="/contact"
                       onClick={() => setShowSupportModal(false)}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#2dd4a1] hover:to-[#1f7a63] text-white rounded-xl font-semibold text-center transition-all transform hover:scale-105"
+                      className="flex-1 px-6 py-3 bg-linear-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#2dd4a1] hover:to-[#1f7a63] text-white rounded-xl font-semibold text-center transition-all transform hover:scale-105"
                     >
                       Contact Us
                     </Link>
