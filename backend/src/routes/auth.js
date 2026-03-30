@@ -1,5 +1,5 @@
 import express from 'express';
-import { getMe } from '../controllers/authController.js';
+import { getMe, getQuota, updatePlan } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -10,5 +10,7 @@ const router = express.Router();
 
 // Get authenticated user data from Firestore
 router.get('/me', protect, getMe);
+router.get('/quota', protect, getQuota);
+router.patch('/plan', protect, updatePlan);
 
 export default router;

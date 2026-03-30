@@ -6,31 +6,105 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { generateText, generateContentWithImage, streamContent } from '../config/gemini.js';
 import { protect } from '../middleware/auth.js';
+import { validateChatPayload } from '../middleware/validation.js';
+import { createRateLimit } from '../middleware/rateLimit.js';
+import { enforceQuota } from '../middleware/quota.js';
+import { sendError, sendSuccess } from '../utils/apiResponse.js';
+import { hashUserId, logError, logWarn } from '../utils/logging.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const UPLOAD_DIR = path.join(__dirname, '../../uploads');
+const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_BYTES || 50 * 1024 * 1024);
+const UPLOAD_RETENTION_MS = Number(process.env.UPLOAD_RETENTION_MS || 24 * 60 * 60 * 1000);
+
+const ALLOWED_MIME_EXTENSIONS = {
+  'application/pdf': ['.pdf'],
+  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/png': ['.png'],
+  'image/webp': ['.webp'],
+  'video/mp4': ['.mp4'],
+  'video/webm': ['.webm'],
+  'video/quicktime': ['.mov'],
+};
 
 const router = express.Router();
+const chatRateLimit = createRateLimit({
+  windowMs: Number(process.env.CHAT_RATE_WINDOW_MS || 60_000),
+  userMax: Number(process.env.CHAT_RATE_USER_MAX || 80),
+  ipMax: Number(process.env.CHAT_RATE_IP_MAX || 120),
+});
+
+const sanitizeFilename = (originalName = 'file') => {
+  const ext = path.extname(originalName).toLowerCase();
+  const name = path
+    .basename(originalName, ext)
+    .replace(/[^a-zA-Z0-9-_]/g, '_')
+    .replace(/_+/g, '_')
+    .slice(0, 80);
+
+  return {
+    safeExt: ext,
+    safeName: name || 'upload',
+  };
+};
+
+const isAllowedUpload = (file) => {
+  const { safeExt } = sanitizeFilename(file.originalname || '');
+  const allowedExt = ALLOWED_MIME_EXTENSIONS[file.mimetype];
+  return Array.isArray(allowedExt) && allowedExt.includes(safeExt);
+};
+
+const ensureUploadDir = async () => {
+  await fs.mkdir(UPLOAD_DIR, { recursive: true });
+};
+
+const pruneExpiredUploads = async () => {
+  try {
+    await ensureUploadDir();
+    const files = await fs.readdir(UPLOAD_DIR);
+    const now = Date.now();
+
+    await Promise.all(
+      files.map(async (entry) => {
+        const targetPath = path.join(UPLOAD_DIR, entry);
+        const stat = await fs.stat(targetPath);
+        if (stat.isFile() && now - stat.mtimeMs > UPLOAD_RETENTION_MS) {
+          await fs.unlink(targetPath).catch(() => {});
+        }
+      })
+    );
+  } catch (error) {
+    logWarn('upload_cleanup_warning', { message: error.message });
+  }
+};
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads');
     try {
-      await fs.mkdir(uploadDir, { recursive: true });
+      await ensureUploadDir();
     } catch (error) {
-      console.error('Error creating upload directory:', error);
+      logError('upload_dir_create_failed', error);
     }
-    cb(null, uploadDir);
+    cb(null, UPLOAD_DIR);
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
+    const { safeName, safeExt } = sanitizeFilename(file.originalname || 'file');
+    cb(null, `${Date.now()}-${safeName}${safeExt}`);
   }
 });
 
 const upload = multer({ 
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+  fileFilter: (req, file, cb) => {
+    if (!isAllowedUpload(file)) {
+      cb(new Error('Unsupported file type'));
+      return;
+    }
+    cb(null, true);
+  },
+  limits: { fileSize: MAX_UPLOAD_BYTES, files: 1 }
 });
 
 // Extract text from PDF
@@ -40,7 +114,7 @@ async function extractTextFromPDF(filePath) {
     const data = await pdfParse(dataBuffer);
     return data.text;
   } catch (error) {
-    console.error('PDF extraction error:', error);
+    logError('pdf_extract_failed', error);
     throw error;
   }
 }
@@ -54,7 +128,7 @@ async function extractTextFromImage(filePath, mimeType) {
     const prompt = "Analyze this image for environmental concerns. Identify any pollution, violations, or environmental issues visible. Provide detailed observations.";
     return await generateContentWithImage(prompt, base64Image, mimeType);
   } catch (error) {
-    console.error('Image analysis error:', error);
+    logError('image_analysis_failed', error);
     throw error;
   }
 }
@@ -67,13 +141,18 @@ async function analyzeVideo(filePath) {
 }
 
 // Upload endpoint
-router.post('/upload', protect, upload.single('file'), async (req, res) => {
+router.post('/upload', protect, chatRateLimit, enforceQuota('upload'), upload.single('file'), async (req, res) => {
+  let filePath;
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      return sendError(res, {
+        status: 400,
+        message: 'No file uploaded',
+        code: 'VALIDATION_ERROR',
+      });
     }
 
-    const filePath = req.file.path;
+    filePath = req.file.path;
     const fileType = req.file.mimetype;
     let content = '';
 
@@ -85,31 +164,39 @@ router.post('/upload', protect, upload.single('file'), async (req, res) => {
     } else if (fileType.startsWith('video/')) {
       content = await analyzeVideo(filePath);
     } else {
-      return res.status(400).json({ error: 'Unsupported file type' });
+      return sendError(res, {
+        status: 400,
+        message: 'Unsupported file type',
+        code: 'VALIDATION_ERROR',
+      });
     }
 
-    // Clean up file after processing
-    await fs.unlink(filePath);
-
-    res.json({
-      success: true,
+    return sendSuccess(res, {
       fileId: req.file.filename,
       content: content.substring(0, 10000) // Limit content length
     });
   } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ error: 'Failed to process file' });
+    logError('chat_upload_failed', error, {
+      requestId: req.requestId,
+      userHash: hashUserId(req.user?.id),
+    });
+    return sendError(res, {
+      status: 500,
+      message: 'Failed to process file',
+      code: 'UPLOAD_FAILED',
+    });
+  } finally {
+    if (filePath) {
+      await fs.unlink(filePath).catch(() => {});
+    }
+    pruneExpiredUploads().catch(() => {});
   }
 });
 
 // Chat message endpoint
-router.post('/message', protect, async (req, res) => {
+router.post('/message', protect, chatRateLimit, enforceQuota('chat'), validateChatPayload, async (req, res) => {
   try {
     const { message, files, conversationHistory } = req.body;
-
-    if (!message) {
-      return res.status(400).json({ error: 'Message is required' });
-    }
 
     // Build context from uploaded files
     let context = '';
@@ -237,27 +324,30 @@ Answer the question above concisely and directly (or give the off-topic refusal 
     // Call Gemini API
     const reply = await generateText(systemPrompt);
 
-    res.json({
-      success: true,
+    return sendSuccess(res, {
       reply: reply
     });
   } catch (error) {
-    console.error('Chat error:', error.message);
+    logError('chat_message_failed', error, {
+      requestId: req.requestId,
+      userHash: hashUserId(req.user?.id),
+    });
     // Sanitize error message to prevent API key leaks
     let errorMessage = error.message || 'Failed to process message';
     errorMessage = errorMessage.replace(/key=[A-Za-z0-9_-]+/gi, 'key=***HIDDEN***');
     
-    res.status(500).json({ 
-      error: 'Failed to process message',
-      details: errorMessage 
+    return sendError(res, {
+      status: 500,
+      message: 'Failed to process message',
+      code: 'CHAT_FAILED',
+      details: errorMessage,
     });
   }
 });
 
 // SSE streaming chat endpoint — sends tokens as they're generated
-router.post('/stream', protect, async (req, res) => {
+router.post('/stream', protect, chatRateLimit, enforceQuota('chat'), validateChatPayload, async (req, res) => {
   const { message, files, conversationHistory } = req.body;
-  if (!message) return res.status(400).json({ error: 'Message is required' });
 
   // Build context from uploaded files (same as /message)
   let context = '';
@@ -389,6 +479,26 @@ Answer the question above concisely and directly (or give the off-topic refusal 
     ()      => { res.write('data: [DONE]\n\n'); res.end(); },
     (err)   => { res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`); res.end(); }
   );
+});
+
+router.use((err, req, res, next) => {
+  if (err?.code === 'LIMIT_FILE_SIZE') {
+    return sendError(res, {
+      status: 413,
+      message: `Upload exceeds max size (${MAX_UPLOAD_BYTES} bytes)`,
+      code: 'PAYLOAD_TOO_LARGE',
+    });
+  }
+
+  if (err?.message === 'Unsupported file type') {
+    return sendError(res, {
+      status: 400,
+      message: err.message,
+      code: 'VALIDATION_ERROR',
+    });
+  }
+
+  next(err);
 });
 
 export default router;

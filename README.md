@@ -194,17 +194,23 @@ Policymakers implement data-driven solutions immediately
 git clone https://github.com/LegendarySumit/greengpt.git
 cd greengpt
 
-# Install dependencies
+# Install backend dependencies
+cd backend
 npm install
 
-# Set up environment variables
-# Create .env file with:
-FIREBASE_PROJECT_ID=your_firebase_project_id
-FIREBASE_PRIVATE_KEY=your_firebase_private_key
-FIREBASE_CLIENT_EMAIL=your_firebase_client_email
-GEMINI_API_KEY=your_gemini_api_key
+# Create backend env file
+cp .env.example .env
 
-# Start development server
+# Install frontend dependencies
+cd ../frontend
+npm install
+
+# Start backend (terminal 1)
+cd ../backend
+npm run dev
+
+# Start frontend (terminal 2)
+cd ../frontend
 npm run dev
 ```
 
@@ -212,14 +218,47 @@ npm run dev
 ```env
 # Firebase
 FIREBASE_PROJECT_ID=your_firebase_project_id
-FIREBASE_PRIVATE_KEY=your_firebase_private_key
-FIREBASE_CLIENT_EMAIL=your_firebase_client_email
+FIREBASE_SERVICE_ACCOUNT={"type":"service_account",...}
 
 # AI Integration
 GEMINI_API_KEY=your_google_gemini_api_key
 
 # Server
-PORT=5001
+PORT=3000
+
+# Security and CORS
+CORS_ALLOWED_ORIGINS=https://your-frontend-domain
+DEV_CORS_ALLOWED_ORIGINS=http://localhost:5173
+
+# Shared KV for distributed limits (production)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+
+# Monitoring
+SENTRY_DSN=
+SENTRY_ENVIRONMENT=staging
+```
+
+Additional production vars used by backend runtime:
+
+```env
+APP_ENV=production
+GLOBAL_RATE_WINDOW_MS=60000
+GLOBAL_RATE_USER_MAX=160
+GLOBAL_RATE_IP_MAX=300
+ANALYZE_RATE_WINDOW_MS=60000
+ANALYZE_RATE_USER_MAX=20
+ANALYZE_RATE_IP_MAX=40
+CHAT_RATE_WINDOW_MS=60000
+CHAT_RATE_USER_MAX=80
+CHAT_RATE_IP_MAX=120
+MAX_ANALYZE_FILE_BYTES=52428800
+MAX_MESSAGE_LENGTH=4000
+MAX_FILES_CONTEXT=5
+MAX_FILE_NAME_LENGTH=200
+MAX_FILE_CONTENT_LENGTH=12000
+MAX_HISTORY_ITEMS=40
+MAX_HISTORY_MESSAGE_LENGTH=4000
 ```
 
 ---
@@ -235,15 +274,11 @@ GreenGPT is configured for production-ready deployment:
 - **Database**: Firebase Firestore
 - **Auth**: Firebase Authentication with Google OAuth
 
-**See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed step-by-step instructions.**
-
 ### Quick Deploy Checklist
-1. ✅ [Configure Google OAuth in Firebase](./DEPLOYMENT.md#step-1-configure-google-oauth-in-firebase-console)
-2. ✅ [Deploy Frontend to Vercel](./DEPLOYMENT.md#step-2-deploy-frontend-to-vercel)
-3. ✅ [Deploy Backend to Render](./DEPLOYMENT.md#step-3-deploy-backend-to-render)
-4. ✅ [Verify Everything Works](./DEPLOYMENT.md#step-5-verify-everything-works)
-
-📚 **Environment Variables**: See [ENV_VARIABLES.md](./ENV_VARIABLES.md)
+1. Set backend env vars on Render (`FIREBASE_*`, `GEMINI_*`, `UPSTASH_*`, `SENTRY_*`, rate-limit vars).
+2. Deploy backend and verify `GET /api/health` and `GET /api/ready`.
+3. Set frontend Vercel vars (`VITE_API_URL`, `VITE_FIREBASE_*`) and deploy frontend.
+4. Verify login, analyze, chat, quota (`GET /api/auth/quota`), and plan update (`PATCH /api/auth/plan`).
 
 ---
 

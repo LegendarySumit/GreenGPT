@@ -28,7 +28,8 @@ export const protect = async (req, res, next) => {
       const decodedToken = await adminAuth.verifyIdToken(token);
       
       // Check if user exists in Firestore (must have signed up)
-      const userDocSnap = await adminDb.collection('users').doc(decodedToken.uid).get();
+      const userRef = adminDb.collection('users').doc(decodedToken.uid);
+      const userDocSnap = await userRef.get();
       
       if (!userDocSnap.exists) {
         return res.status(401).json({
@@ -42,6 +43,8 @@ export const protect = async (req, res, next) => {
         email: decodedToken.email || null,
         name: decodedToken.name || null,
       };
+      req.userDocRef = userRef;
+      req.userDoc = userDocSnap.data() || null;
       next();
     } catch (error) {
       return res.status(401).json({

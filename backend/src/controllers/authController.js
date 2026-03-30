@@ -1,4 +1,8 @@
 import { adminDb } from '../config/firebaseAdmin.js';
+import { sendError, sendSuccess } from '../utils/apiResponse.js';
+import { hashUserId, logError } from '../utils/logging.js';
+import { normalizePlanId } from '../config/plans.js';
+import { readPlanAndUsage } from '../services/quotaService.js';
 
 // @desc    Get current user
 // @route   GET /api/auth/me
@@ -11,31 +15,120 @@ export const getMe = async (req, res) => {
     const userDocSnap = await adminDb.collection('users').doc(userId).get();
 
     if (!userDocSnap.exists) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found in Firestore'
+      return sendError(res, {
+        status: 404,
+        message: 'User not found in Firestore',
+        code: 'USER_NOT_FOUND',
       });
     }
 
     const userData = userDocSnap.data();
 
-    res.status(200).json({
-      success: true,
+    const { plan, usage, remaining } = readPlanAndUsage(userData);
+
+    return sendSuccess(res, {
       user: {
         id: userId,
         email: userData.email,
         name: userData.name,
         photoURL: userData.photoURL || null,
         analysisCount: userData.analysisCount || 0,
-        createdAt: userData.createdAt
-      }
+        createdAt: userData.createdAt,
+        plan,
+        usage,
+        remaining,
+      },
+    }, 200);
+  } catch (error) {
+    logError('auth_get_me_failed', error, {
+      requestId: req.requestId,
+      userHash: hashUserId(req.user?.id),
+    });
+    return sendError(res, {
+      status: 500,
+      message: 'Error fetching user data',
+      code: 'AUTH_PROFILE_FAILED',
+    });
+  }
+};
+
+// @desc    Get current quota usage and limits
+// @route   GET /api/auth/quota
+// @access  Private
+export const getQuota = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userDoc = req.userDoc || (await adminDb.collection('users').doc(userId).get()).data();
+    const { plan, usage, remaining } = readPlanAndUsage(userDoc || {});
+
+    return sendSuccess(res, {
+      quota: {
+        plan,
+        usage,
+        remaining,
+      },
     });
   } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching user data',
-      error: error.message
+    logError('auth_get_quota_failed', error, {
+      requestId: req.requestId,
+      userHash: hashUserId(req.user?.id),
+    });
+    return sendError(res, {
+      status: 500,
+      message: 'Error fetching quota data',
+      code: 'AUTH_QUOTA_FAILED',
+    });
+  }
+};
+
+// @desc    Update user plan
+// @route   PATCH /api/auth/plan
+// @access  Private
+export const updatePlan = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const requestedPlanId = normalizePlanId(req.body?.planId);
+
+    if (!req.body?.planId || requestedPlanId !== String(req.body.planId).toLowerCase()) {
+      return sendError(res, {
+        status: 400,
+        message: 'Invalid planId',
+        code: 'VALIDATION_ERROR',
+      });
+    }
+
+    const userRef = adminDb.collection('users').doc(userId);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      return sendError(res, {
+        status: 404,
+        message: 'User not found in Firestore',
+        code: 'USER_NOT_FOUND',
+      });
+    }
+
+    await userRef.update({
+      planId: requestedPlanId,
+      planUpdatedAt: new Date(),
+    });
+
+    const updatedData = (await userRef.get()).data() || {};
+    const { plan, usage, remaining } = readPlanAndUsage(updatedData);
+
+    return sendSuccess(res, {
+      plan,
+      usage,
+      remaining,
+    });
+  } catch (error) {
+    logError('auth_update_plan_failed', error, {
+      requestId: req.requestId,
+      userHash: hashUserId(req.user?.id),
+    });
+    return sendError(res, {
+      status: 500,
+      message: 'Failed to update plan',
+      code: 'AUTH_PLAN_UPDATE_FAILED',
     });
   }
 };

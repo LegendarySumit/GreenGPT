@@ -3,13 +3,18 @@ import { generateContent } from "../config/gemini.js";
 import { environmentPrompt } from "../prompts/environmentPrompt.js";
 import { extractJSON } from "../utils/jsonCleaner.js";
 import { adminDb } from "../config/firebaseAdmin.js";
-import admin from "../config/firebaseAdmin.js";
+import { sendError, sendSuccess, toHttpError } from "../utils/apiResponse.js";
+import { hashUserId, logError, logInfo } from "../utils/logging.js";
 
 // POST /api/analyze — run AI analysis, return result (no DB write here)
 export const analyzeDocument = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
+      return sendError(res, {
+        status: 400,
+        message: "No file uploaded",
+        code: "VALIDATION_ERROR",
+      });
     }
 
     const text = await extractTextFromPDF(req.file.buffer);
@@ -22,21 +27,21 @@ export const analyzeDocument = async (req, res) => {
 
     if (!aiText) throw new Error("No response from AI");
 
-    console.log("AI raw response (first 300 chars):", aiText.slice(0, 300));
-
     const analysis = extractJSON(aiText);
 
-    res.json({ success: true, analysis });
+    return sendSuccess(res, { analysis });
   } catch (error) {
-    console.error("GEMINI ERROR:", error.message);
-    let errorMessage = error.message || "AI analysis failed";
-    errorMessage = errorMessage.replace(/key=[A-Za-z0-9_-]+/gi, "key=***HIDDEN***");
-    const statusCode = Number.isInteger(error.statusCode)
-      ? error.statusCode
-      : Number.isInteger(error.status)
-        ? error.status
-        : 500;
-    res.status(statusCode).json({ success: false, error: errorMessage });
+    const { status, message } = toHttpError(error, "AI analysis failed");
+    const safeMessage = message.replace(/key=[A-Za-z0-9_-]+/gi, "key=***HIDDEN***");
+    logError("analyze_document_failed", error, {
+      requestId: req.requestId,
+      userHash: hashUserId(req.user?.id),
+    });
+    return sendError(res, {
+      status,
+      message: safeMessage,
+      code: "ANALYZE_FAILED",
+    });
   }
 };
 
@@ -46,30 +51,47 @@ export const saveAnalysis = async (req, res) => {
     const uid = req.user.id;
     const { fileName, fileSizeBytes, analysis } = req.body;
 
-    if (!analysis || !fileName) {
-      return res.status(400).json({ success: false, error: "Missing required fields" });
-    }
+    const userRef = adminDb.collection("users").doc(uid);
+    const analysisRef = userRef.collection("analyses").doc();
 
-    const docRef = await adminDb
-      .collection("users")
-      .doc(uid)
-      .collection("analyses")
-      .add({
+    await adminDb.runTransaction(async (tx) => {
+      const userSnap = await tx.get(userRef);
+      if (!userSnap.exists) {
+        const err = new Error("User not found");
+        err.status = 404;
+        throw err;
+      }
+
+      const currentCount = Number(userSnap.data()?.analysisCount || 0);
+
+      tx.set(analysisRef, {
         fileName,
         fileSizeBytes: fileSizeBytes || 0,
         analysis,
         createdAt: new Date(),
       });
 
-    await adminDb
-      .collection("users")
-      .doc(uid)
-      .update({ analysisCount: admin.firestore.FieldValue.increment(1) });
+      tx.update(userRef, { analysisCount: currentCount + 1 });
+    });
 
-    res.json({ success: true, analysisId: docRef.id });
+    logInfo("analysis_saved", {
+      requestId: req.requestId,
+      userHash: hashUserId(uid),
+      analysisId: analysisRef.id,
+    });
+
+    return sendSuccess(res, { analysisId: analysisRef.id });
   } catch (error) {
-    console.error("Save error:", error.message);
-    res.status(500).json({ success: false, error: "Failed to save analysis" });
+    const { status, message } = toHttpError(error, "Failed to save analysis");
+    logError("analysis_save_failed", error, {
+      requestId: req.requestId,
+      userHash: hashUserId(req.user?.id),
+    });
+    return sendError(res, {
+      status,
+      message,
+      code: "ANALYSIS_SAVE_FAILED",
+    });
   }
 };
 
@@ -79,23 +101,53 @@ export const deleteAnalysis = async (req, res) => {
     const uid = req.user.id;
     const { id } = req.params;
 
-    await adminDb
-      .collection("users")
-      .doc(uid)
-      .collection("analyses")
-      .doc(id)
-      .delete();
+    if (!id || typeof id !== "string") {
+      return sendError(res, {
+        status: 400,
+        message: "Invalid analysis id",
+        code: "VALIDATION_ERROR",
+      });
+    }
 
-    await adminDb
-      .collection("users")
-      .doc(uid)
-      .update({ analysisCount: admin.firestore.FieldValue.increment(-1) })
-      .catch(() => {});
+    const userRef = adminDb.collection("users").doc(uid);
+    const analysisRef = userRef.collection("analyses").doc(id);
 
-    res.json({ success: true });
+    let deleted = false;
+
+    await adminDb.runTransaction(async (tx) => {
+      const [userSnap, analysisSnap] = await Promise.all([tx.get(userRef), tx.get(analysisRef)]);
+
+      if (!userSnap.exists) {
+        const err = new Error("User not found");
+        err.status = 404;
+        throw err;
+      }
+
+      if (!analysisSnap.exists) {
+        deleted = false;
+        return;
+      }
+
+      deleted = true;
+      const currentCount = Number(userSnap.data()?.analysisCount || 0);
+      const nextCount = currentCount > 0 ? currentCount - 1 : 0;
+
+      tx.delete(analysisRef);
+      tx.update(userRef, { analysisCount: nextCount });
+    });
+
+    return sendSuccess(res, { deleted });
   } catch (error) {
-    console.error("Delete error:", error.message);
-    res.status(500).json({ success: false, error: "Failed to delete analysis" });
+    const { status, message } = toHttpError(error, "Failed to delete analysis");
+    logError("analysis_delete_failed", error, {
+      requestId: req.requestId,
+      userHash: hashUserId(req.user?.id),
+    });
+    return sendError(res, {
+      status,
+      message,
+      code: "ANALYSIS_DELETE_FAILED",
+    });
   }
 };
 
@@ -121,9 +173,17 @@ export const getAnalysisHistory = async (req, res) => {
       createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt,
     }));
 
-    res.json({ success: true, history });
+    return sendSuccess(res, { history });
   } catch (error) {
-    console.error("History fetch error:", error.message);
-    res.status(500).json({ success: false, error: "Failed to fetch history" });
+    const { status, message } = toHttpError(error, "Failed to fetch history");
+    logError("analysis_history_failed", error, {
+      requestId: req.requestId,
+      userHash: hashUserId(req.user?.id),
+    });
+    return sendError(res, {
+      status,
+      message,
+      code: "ANALYSIS_HISTORY_FAILED",
+    });
   }
 };

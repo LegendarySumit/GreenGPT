@@ -1,5 +1,8 @@
 import axios from "axios";
 
+export const isGeminiConfigured = () =>
+  process.env.USE_MOCK_API === "true" || Boolean(process.env.GEMINI_API_KEY);
+
 class GeminiRequestError extends Error {
   constructor(message, statusCode = 500) {
     super(message);
