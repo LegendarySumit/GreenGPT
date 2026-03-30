@@ -11,15 +11,15 @@
 ![Status](https://img.shields.io/badge/Status-Production_Ready-success)
 
 ### Deployment & CI/CD
-[![Backend CI/CD](https://github.com/yourusername/GreenGPT/actions/workflows/ci-backend.yml/badge.svg)](https://github.com/yourusername/GreenGPT/actions/workflows/ci-backend.yml)
-[![Frontend CI/CD](https://github.com/yourusername/GreenGPT/actions/workflows/ci-frontend.yml/badge.svg)](https://github.com/yourusername/GreenGPT/actions/workflows/ci-frontend.yml)
-[![Security Scan](https://github.com/yourusername/GreenGPT/actions/workflows/security-scan.yml/badge.svg)](https://github.com/yourusername/GreenGPT/actions/workflows/security-scan.yml)
-[![Health Check](https://github.com/yourusername/GreenGPT/actions/workflows/health-check.yml/badge.svg)](https://github.com/yourusername/GreenGPT/actions/workflows/health-check.yml)
+Backend CI/CD: https://github.com/LegendarySumit/GreenGPT/actions/workflows/ci-backend.yml
+Frontend CI/CD: https://github.com/LegendarySumit/GreenGPT/actions/workflows/ci-frontend.yml
+Security Scan: https://github.com/LegendarySumit/GreenGPT/actions/workflows/security-scan.yml
+Health Check: https://github.com/LegendarySumit/GreenGPT/actions/workflows/health-check.yml
 
 ### Live Deployment
-- 🚀 **Frontend**: https://greengpt.vercel.app
-- 🔧 **API**: https://greengpt-backend.onrender.com
-- 📊 **Health Check**: https://greengpt-backend.onrender.com/api/ready
+🚀 Frontend: https://greengpt.vercel.app  
+🔧 API: https://greengpt-backend.onrender.com  
+📊 Health Check: https://greengpt-backend.onrender.com/api/ready
 
 *Transform complex environmental data into actionable insights in 30 seconds*
 
