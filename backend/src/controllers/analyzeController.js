@@ -6,6 +6,37 @@ import { adminDb } from "../config/firebaseAdmin.js";
 import { sendError, sendSuccess, toHttpError } from "../utils/apiResponse.js";
 import { hashUserId, logError, logInfo } from "../utils/logging.js";
 
+const normalizeAnalyzeError = (error) => {
+  const { status: baseStatus, message: baseMessage } = toHttpError(error, "AI analysis failed");
+  const message = baseMessage || "AI analysis failed";
+
+  if (/No response from AI/i.test(message)) {
+    return {
+      status: 502,
+      message: "AI service returned an empty response. Please retry in a few seconds.",
+    };
+  }
+
+  if (/No JSON found in AI response|Failed to parse JSON/i.test(message)) {
+    return {
+      status: 502,
+      message: "AI returned an invalid analysis format. Please retry your PDF analysis.",
+    };
+  }
+
+  if (/no extractable text|scanned image/i.test(message)) {
+    return {
+      status: 422,
+      message,
+    };
+  }
+
+  return {
+    status: baseStatus,
+    message,
+  };
+};
+
 // POST /api/analyze — run AI analysis, return result (no DB write here)
 export const analyzeDocument = async (req, res) => {
   try {
@@ -31,7 +62,7 @@ export const analyzeDocument = async (req, res) => {
 
     return sendSuccess(res, { analysis });
   } catch (error) {
-    const { status, message } = toHttpError(error, "AI analysis failed");
+    const { status, message } = normalizeAnalyzeError(error);
     const safeMessage = message.replace(/key=[A-Za-z0-9_-]+/gi, "key=***HIDDEN***");
     logError("analyze_document_failed", error, {
       requestId: req.requestId,
