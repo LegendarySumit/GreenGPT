@@ -31,6 +31,24 @@ const parseCsvOrigins = (value = "") =>
     .map((origin) => origin.trim())
     .filter(Boolean);
 
+const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const createOriginPatternRegex = (pattern = "") => {
+  const trimmed = pattern.trim();
+  if (!trimmed) return null;
+
+  if (!trimmed.includes("*")) {
+    return new RegExp(`^${escapeRegex(trimmed)}$`);
+  }
+
+  const regexSource = trimmed
+    .split("*")
+    .map((part) => escapeRegex(part))
+    .join(".*");
+
+  return new RegExp(`^${regexSource}$`);
+};
+
 const defaultDevOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
@@ -41,6 +59,12 @@ const defaultDevOrigins = [
 const productionOrigins = parseCsvOrigins(
   process.env.CORS_ALLOWED_ORIGINS || process.env.FRONTEND_URL || ""
 );
+const configuredOriginPatterns = parseCsvOrigins(
+  process.env.CORS_ALLOWED_ORIGIN_PATTERNS || ""
+);
+const allowedOriginPatterns = configuredOriginPatterns
+  .map((pattern) => createOriginPatternRegex(pattern))
+  .filter(Boolean);
 const configuredDevOrigins = parseCsvOrigins(process.env.DEV_CORS_ALLOWED_ORIGINS || "");
 const allowedOrigins = isProduction
   ? productionOrigins
@@ -48,8 +72,10 @@ const allowedOrigins = isProduction
     ? configuredDevOrigins
     : defaultDevOrigins;
 
-if (isProduction && allowedOrigins.length === 0) {
-  throw new Error("CORS_ALLOWED_ORIGINS (or FRONTEND_URL) must be configured in production");
+if (isProduction && allowedOrigins.length === 0 && allowedOriginPatterns.length === 0) {
+  throw new Error(
+    "CORS_ALLOWED_ORIGINS (or FRONTEND_URL) or CORS_ALLOWED_ORIGIN_PATTERNS must be configured in production"
+  );
 }
 
 const cspConnectSources = ["'self'", ...allowedOrigins];
@@ -104,6 +130,11 @@ app.use(
       }
 
       if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      if (allowedOriginPatterns.some((pattern) => pattern.test(origin))) {
         callback(null, true);
         return;
       }
