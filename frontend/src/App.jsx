@@ -31,7 +31,7 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors duration-300">
       <Navbar />
-      <div className={`flex-grow flex flex-col min-h-0${isFixedLayout ? ' overflow-hidden' : ''}`}>
+      <div className={`grow flex flex-col min-h-0${isFixedLayout ? ' overflow-hidden' : ''}`}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={
