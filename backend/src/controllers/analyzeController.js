@@ -6,6 +6,15 @@ import { adminDb } from "../config/firebaseAdmin.js";
 import { sendError, sendSuccess, toHttpError } from "../utils/apiResponse.js";
 import { hashUserId, logError, logInfo } from "../utils/logging.js";
 
+const ANALYZE_MAX_TEXT_CHARS = Number(process.env.MAX_FILE_CONTENT_LENGTH || 12000);
+const ANALYZE_AI_RETRY_COUNT = Number(process.env.ANALYZE_AI_RETRY_COUNT || 2);
+
+const normalizeExtractedText = (value = "") =>
+  value
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 const normalizeAnalyzeError = (error) => {
   const { status: baseStatus, message: baseMessage } = toHttpError(error, "AI analysis failed");
   const message = baseMessage || "AI analysis failed";
@@ -49,16 +58,36 @@ export const analyzeDocument = async (req, res) => {
     }
 
     const text = await extractTextFromPDF(req.file.buffer);
-    const truncatedText = text.substring(0, 12000);
+    const normalizedText = normalizeExtractedText(text);
+    const truncatedText = normalizedText.substring(0, ANALYZE_MAX_TEXT_CHARS);
     const prompt = environmentPrompt(truncatedText);
 
-    // responseMimeType forces Gemini to output pure JSON — works on all 1.5+ models
-    const result = await generateContent(prompt, { responseMimeType: "application/json" });
-    const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    let analysis = null;
+    let lastError = null;
 
-    if (!aiText) throw new Error("No response from AI");
+    for (let attempt = 1; attempt <= ANALYZE_AI_RETRY_COUNT; attempt += 1) {
+      try {
+        // responseMimeType nudges Gemini towards strict JSON.
+        const result = await generateContent(prompt, {
+          responseMimeType: "application/json",
+          temperature: 0,
+        });
+        const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    const analysis = extractJSON(aiText);
+        if (!aiText) {
+          throw new Error("No response from AI");
+        }
+
+        analysis = extractJSON(aiText);
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (!analysis) {
+      throw lastError || new Error("No response from AI");
+    }
 
     return sendSuccess(res, { analysis });
   } catch (error) {

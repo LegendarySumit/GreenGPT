@@ -1,27 +1,74 @@
+const removeControlChars = (value = "") =>
+  value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+
+const stripCodeFences = (value = "") =>
+  value.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+
+const tryParse = (value) => {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
+const findBalancedObjectCandidates = (input = "") => {
+  const candidates = [];
+  const stack = [];
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < input.length; i += 1) {
+    const ch = input[i];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) continue;
+
+    if (ch === "{") {
+      stack.push(i);
+      continue;
+    }
+
+    if (ch === "}" && stack.length > 0) {
+      const start = stack.pop();
+      if (stack.length === 0) {
+        candidates.push(input.slice(start, i + 1));
+      }
+    }
+  }
+
+  return candidates;
+};
+
 export const extractJSON = (text) => {
-  // Remove markdown code fences if present
-  let cleaned = text
-    .replace(/```json\n?/gi, "")
-    .replace(/```\n?/g, "")
-    .trim();
+  const cleaned = removeControlChars(stripCodeFences(text || ""));
 
-  // Find first { and last }
-  const firstBrace = cleaned.indexOf("{");
-  const lastBrace = cleaned.lastIndexOf("}");
+  const direct = tryParse(cleaned);
+  if (direct) return direct;
 
-  if (firstBrace === -1 || lastBrace === -1) {
+  const candidates = findBalancedObjectCandidates(cleaned);
+  for (const candidate of candidates) {
+    const parsed = tryParse(candidate);
+    if (parsed) return parsed;
+  }
+
+  if (candidates.length === 0) {
     throw new Error("No JSON found in AI response");
   }
 
-  let jsonString = cleaned.substring(firstBrace, lastBrace + 1);
-
-  // Remove control characters that break JSON.parse
-  // (keeps \t \n \r which are valid JSON whitespace)
-  jsonString = jsonString.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
-
-  try {
-    return JSON.parse(jsonString);
-  } catch (error) {
-    throw new Error(`Failed to parse JSON: ${error.message}`);
-  }
+  throw new Error("Failed to parse JSON: AI response was not valid JSON");
 };
