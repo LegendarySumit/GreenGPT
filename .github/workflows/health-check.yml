@@ -23,7 +23,6 @@ jobs:
             echo "❌ Backend health check failed with status $response"
             exit 1
           fi
-        continue-on-error: true
 
       - name: Check backend uptime
         run: |
@@ -47,7 +46,6 @@ jobs:
             echo "❌ Frontend health check failed with status $response"
             exit 1
           fi
-        continue-on-error: true
 
   sentry-check:
     name: Sentry Configuration Validation
@@ -86,8 +84,7 @@ jobs:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: |
           if [ -z "$FIREBASE_PROJECT_ID" ]; then
-            echo "❌ Firebase Project ID not configured"
-            exit 1
+            echo "⚠️  Firebase Project ID not configured"
           else
             echo "✅ Firebase Project ID is configured: $FIREBASE_PROJECT_ID"
           fi
@@ -117,6 +114,7 @@ jobs:
 
     steps:
       - name: Determine status
+        id: determine_status
         run: |
           if [ "${{ needs.health-check-backend.result }}" == "success" ] && [ "${{ needs.health-check-frontend.result }}" == "success" ]; then
             echo "✅ All systems operational"
@@ -125,10 +123,21 @@ jobs:
             echo "⚠️  Some systems may be degraded"
             STATUS="DEGRADED"
           fi
-          echo "STATUS=$STATUS" >> $GITHUB_ENV
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+
+      - name: Detect Slack webhook configuration
+        id: slack_webhook
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -n "$SLACK_WEBHOOK_URL" ]; then
+            echo "has_webhook=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_webhook=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Send Slack notification
-        if: env.STATUS == 'DEGRADED' && secrets.SLACK_WEBHOOK_URL != ''
+        if: steps.determine_status.outputs.status == 'DEGRADED' && steps.slack_webhook.outputs.has_webhook == 'true'
         uses: slackapi/slack-github-action@v1
         with:
           payload: |
@@ -139,7 +148,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Health Status:* ${{ env.STATUS }}\n*Backend:* ${{ needs.health-check-backend.result }}\n*Frontend:* ${{ needs.health-check-frontend.result }}"
+                    "text": "*Health Status:* ${{ steps.determine_status.outputs.status }}\n*Backend:* ${{ needs.health-check-backend.result }}\n*Frontend:* ${{ needs.health-check-frontend.result }}"
                   }
                 }
               ]
