@@ -5,16 +5,37 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
+  updateProfile,
+  updateEmail,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  updatePassword,
 } from 'firebase/auth';
 import { auth, googleProvider, db } from '../config/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 
 const AuthContext = createContext();
+const API_BASE = import.meta.env.VITE_API_URL;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [idToken, setIdToken] = useState(null);
+
+  const fetchBackendMe = async (token) => {
+    if (!token || !API_BASE) return null;
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data?.user || null;
+    } catch {
+      return null;
+    }
+  };
 
   // Monitor auth state changes
   useEffect(() => {
@@ -36,11 +57,13 @@ export const AuthProvider = ({ children }) => {
             userData = { ...userData, ...userDocSnap.data() };
           }
 
-          setUser(userData);
           const token = await firebaseUser.getIdToken();
+          const backendUser = await fetchBackendMe(token);
+          const finalUser = backendUser ? { ...userData, ...backendUser } : userData;
+
+          setUser(finalUser);
           setIdToken(token);
-          localStorage.setItem('user', JSON.stringify(userData));
-          localStorage.setItem('idToken', token);
+          localStorage.setItem('user', JSON.stringify(finalUser));
         } catch (error) {
           console.warn('Error fetching user data from Firestore:', error);
           // Still set user even if Firestore is temporarily unavailable
@@ -50,17 +73,18 @@ export const AuthProvider = ({ children }) => {
             name: firebaseUser.displayName || 'User',
             photoURL: firebaseUser.photoURL || null,
           };
-          setUser(userData);
           const token = await firebaseUser.getIdToken();
+          const backendUser = await fetchBackendMe(token);
+          const finalUser = backendUser ? { ...userData, ...backendUser } : userData;
+
+          setUser(finalUser);
           setIdToken(token);
-          localStorage.setItem('user', JSON.stringify(userData));
-          localStorage.setItem('idToken', token);
+          localStorage.setItem('user', JSON.stringify(finalUser));
         }
       } else {
         setUser(null);
         setIdToken(null);
         localStorage.removeItem('user');
-        localStorage.removeItem('idToken');
       }
       setLoading(false);
     });
@@ -79,6 +103,7 @@ export const AuthProvider = ({ children }) => {
         name: name || 'User',
         createdAt: new Date(),
         analysisCount: 0,
+        planId: 'free_trial',
       });
 
       const token = await firebaseUser.getIdToken();
@@ -190,6 +215,7 @@ export const AuthProvider = ({ children }) => {
           photoURL: firebaseUser.photoURL || null,
           createdAt: new Date(),
           analysisCount: 0,
+          planId: 'free_trial',
         });
       }
 
@@ -233,6 +259,158 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { success: true, message: 'Password reset email sent.' };
+    } catch (error) {
+      let message = 'Failed to send password reset email.';
+      if (error.code === 'auth/invalid-email') {
+        message = 'Invalid email address.';
+      } else if (error.code === 'auth/user-not-found') {
+        message = 'No user found for this email.';
+      }
+      return { success: false, message };
+    }
+  };
+
+  const updateUserProfile = async ({ name, email }) => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        return { success: false, message: 'Not authenticated' };
+      }
+
+      const normalizedName = (name || '').trim();
+      const normalizedEmail = (email || '').trim();
+
+      if (normalizedName && normalizedName !== currentUser.displayName) {
+        await updateProfile(currentUser, { displayName: normalizedName });
+      }
+
+      if (normalizedEmail && normalizedEmail !== currentUser.email) {
+        await updateEmail(currentUser, normalizedEmail);
+      }
+
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
+        ...(normalizedName ? { name: normalizedName } : {}),
+        ...(normalizedEmail ? { email: normalizedEmail } : {}),
+      });
+
+      const nextUser = {
+        ...(user || {}),
+        id: currentUser.uid,
+        name: normalizedName || currentUser.displayName || user?.name || 'User',
+        email: normalizedEmail || currentUser.email || user?.email,
+        photoURL: currentUser.photoURL || user?.photoURL || null,
+      };
+
+      setUser(nextUser);
+      localStorage.setItem('user', JSON.stringify(nextUser));
+
+      return { success: true, message: 'Profile updated successfully.' };
+    } catch (error) {
+      let message = 'Failed to update profile.';
+      if (error.code === 'auth/requires-recent-login') {
+        message = 'Please log in again before updating email.';
+      } else if (error.code === 'auth/invalid-email') {
+        message = 'Invalid email address.';
+      }
+      return { success: false, message };
+    }
+  };
+
+  const changeUserPassword = async ({ currentPassword, newPassword }) => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        return { success: false, message: 'Not authenticated' };
+      }
+
+      const hasPasswordProvider = currentUser.providerData?.some((provider) => provider?.providerId === 'password');
+
+      if (hasPasswordProvider) {
+        const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+        await reauthenticateWithCredential(currentUser, credential);
+      }
+
+      await updatePassword(currentUser, newPassword);
+      return { success: true, message: 'Password changed successfully.' };
+    } catch (error) {
+      let message = 'Failed to change password.';
+      if (error.code === 'auth/wrong-password') {
+        message = 'Current password is incorrect.';
+      } else if (error.code === 'auth/weak-password') {
+        message = 'New password should be at least 6 characters.';
+      } else if (error.code === 'auth/requires-recent-login') {
+        message = 'Please log in again before changing password.';
+      }
+      return { success: false, message };
+    }
+  };
+
+  const updatePlan = async (planId) => {
+    try {
+      const token = await getToken();
+      if (!token || !API_BASE) return { success: false, message: 'Missing API configuration' };
+
+      const res = await fetch(`${API_BASE}/api/auth/plan`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ planId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        return { success: false, message: data?.message || 'Failed to update plan' };
+      }
+
+      const nextUser = {
+        ...(user || {}),
+        plan: data.plan,
+        usage: data.usage,
+        remaining: data.remaining,
+      };
+      setUser(nextUser);
+      localStorage.setItem('user', JSON.stringify(nextUser));
+
+      return { success: true, data };
+    } catch {
+      return { success: false, message: 'Failed to update plan' };
+    }
+  };
+
+  const fetchQuota = async () => {
+    try {
+      const token = await getToken();
+      if (!token || !API_BASE) return { success: false, message: 'Missing API configuration' };
+      const res = await fetch(`${API_BASE}/api/auth/quota`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        return { success: false, message: data?.message || 'Failed to fetch quota' };
+      }
+
+      const nextUser = {
+        ...(user || {}),
+        plan: data.quota?.plan,
+        usage: data.quota?.usage,
+        remaining: data.quota?.remaining,
+      };
+      setUser(nextUser);
+      localStorage.setItem('user', JSON.stringify(nextUser));
+
+      return { success: true, data: data.quota };
+    } catch {
+      return { success: false, message: 'Failed to fetch quota' };
+    }
+  };
+
   const isAuthenticated = () => {
     return !!idToken && !!user;
   };
@@ -256,6 +434,11 @@ export const AuthProvider = ({ children }) => {
         logout,
         isAuthenticated,
         getToken,
+        resetPassword,
+        updateUserProfile,
+        changeUserPassword,
+        updatePlan,
+        fetchQuota,
       }}
     >
       {children}

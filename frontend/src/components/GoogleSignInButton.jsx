@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 
 export default function GoogleSignInButton({ isSignup = false }) {
   const [loading, setLoading] = useState(false);
@@ -23,7 +22,7 @@ export default function GoogleSignInButton({ isSignup = false }) {
       } else {
         setError(result.message || (isSignup ? "Google sign-up failed. Please try again." : "Google sign-in failed. Please try again."));
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -33,13 +32,9 @@ export default function GoogleSignInButton({ isSignup = false }) {
   return (
     <div>
       {error && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm"
-        >
+        <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
           {error}
-        </motion.div>
+        </div>
       )}
 
       <button

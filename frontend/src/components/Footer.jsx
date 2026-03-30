@@ -11,12 +11,6 @@ export default function Footer() {
     setEmail("");
   };
 
-  const openCaseStudiesModal = (e) => {
-    e.preventDefault();
-    // Navigate to home and trigger modal via URL parameter
-    window.location.href = '/?openCaseStudies=true';
-  };
-
   return (
     <footer className="bg-gray-900 dark:bg-black text-white mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">

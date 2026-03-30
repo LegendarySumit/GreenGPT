@@ -4,11 +4,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, updateUserProfile, changeUserPassword } = useAuth();
   const navigate = useNavigate();
   const [activeModal, setActiveModal] = useState(null);
   const [editForm, setEditForm] = useState({ name: user?.name || "", email: user?.email || "" });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [statusMessage, setStatusMessage] = useState({ type: "", message: "" });
+  const [actionLoading, setActionLoading] = useState(false);
   const [preferences, setPreferences] = useState({ 
     notifications: true, 
     emailUpdates: true,
@@ -16,35 +18,60 @@ export default function ProfilePage() {
     language: "en"
   });
 
-  // Get selected tier from localStorage
-  const selectedTier = JSON.parse(localStorage.getItem('selectedTier') || '{"name": "Free Trial", "price": "$0"}');
+  const selectedTierName = user?.plan?.name || 'Free Trial';
 
-  const closeModal = () => setActiveModal(null);
+  const closeModal = () => {
+    setActiveModal(null);
+    setStatusMessage({ type: "", message: "" });
+  };
 
   const handleEditProfile = (e) => {
     e.preventDefault();
-    alert("Profile updated successfully!");
-    closeModal();
+    setStatusMessage({ type: "", message: "" });
+
+    if (!editForm.name.trim() || !editForm.email.trim()) {
+      setStatusMessage({ type: "error", message: "Name and email are required." });
+      return;
+    }
+
+    setActionLoading(true);
+    updateUserProfile({ name: editForm.name, email: editForm.email }).then((result) => {
+      setStatusMessage({ type: result.success ? "success" : "error", message: result.message });
+      if (result.success) {
+        setTimeout(() => closeModal(), 900);
+      }
+    }).finally(() => setActionLoading(false));
   };
 
   const handleChangePassword = (e) => {
     e.preventDefault();
+    setStatusMessage({ type: "", message: "" });
+
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert("Passwords don't match!");
+      setStatusMessage({ type: "error", message: "Passwords don't match." });
       return;
     }
     if (passwordForm.newPassword.length < 6) {
-      alert("Password must be at least 6 characters!");
+      setStatusMessage({ type: "error", message: "Password must be at least 6 characters." });
       return;
     }
-    alert("Password changed successfully!");
-    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    closeModal();
+
+    setActionLoading(true);
+    changeUserPassword({
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword,
+    }).then((result) => {
+      setStatusMessage({ type: result.success ? "success" : "error", message: result.message });
+      if (result.success) {
+        setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        setTimeout(() => closeModal(), 900);
+      }
+    }).finally(() => setActionLoading(false));
   };
 
   const handleSavePreferences = () => {
-    alert("Preferences saved successfully!");
-    closeModal();
+    setStatusMessage({ type: "success", message: "Preferences saved successfully!" });
+    setTimeout(() => closeModal(), 700);
   };
 
   return (
@@ -132,7 +159,7 @@ export default function ProfilePage() {
                       Member since {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                     </span>
                     <span className="px-2 py-1 bg-[#1f7a63]/20 text-[#1f7a63] dark:text-[#2dd4a1] rounded-full text-xs font-semibold">
-                      {selectedTier.name} Plan
+                      {selectedTierName} Plan
                     </span>
                   </div>
                 </div>
@@ -371,12 +398,18 @@ export default function ProfilePage() {
                     className="w-full px-4 py-3 bg-gray-100 dark:bg-white/10 border border-gray-300 dark:border-white/20 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#2dd4a1] outline-none"
                   />
                 </div>
+                {statusMessage.message && (
+                  <p className={`text-sm ${statusMessage.type === 'success' ? 'text-emerald-500 dark:text-emerald-300' : 'text-red-500 dark:text-red-300'}`}>
+                    {statusMessage.message}
+                  </p>
+                )}
                 <div className="flex gap-3 mt-6">
                   <button
                     type="submit"
+                    disabled={actionLoading}
                     className="flex-1 py-3 bg-[#1f7a63] hover:bg-[#155744] text-white font-bold rounded-lg transition-colors shadow-lg"
                   >
-                    Save Changes
+                    {actionLoading ? 'Saving...' : 'Save Changes'}
                   </button>
                   <button
                     type="button"
@@ -435,12 +468,18 @@ export default function ProfilePage() {
                     className="w-full px-4 py-3 bg-gray-100 dark:bg-white/10 border border-gray-300 dark:border-white/20 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#2dd4a1] outline-none"
                   />
                 </div>
+                {statusMessage.message && (
+                  <p className={`text-sm ${statusMessage.type === 'success' ? 'text-emerald-500 dark:text-emerald-300' : 'text-red-500 dark:text-red-300'}`}>
+                    {statusMessage.message}
+                  </p>
+                )}
                 <div className="flex gap-3 mt-6">
                   <button
                     type="submit"
+                    disabled={actionLoading}
                     className="flex-1 py-3 bg-[#1f7a63] hover:bg-[#155744] text-white font-bold rounded-lg transition-colors shadow-lg"
                   >
-                    Change Password
+                    {actionLoading ? 'Updating...' : 'Change Password'}
                   </button>
                   <button
                     type="button"
@@ -531,6 +570,11 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
+                {statusMessage.message && (
+                  <p className={`text-sm ${statusMessage.type === 'success' ? 'text-emerald-500 dark:text-emerald-300' : 'text-red-500 dark:text-red-300'}`}>
+                    {statusMessage.message}
+                  </p>
+                )}
                 <button
                   onClick={handleSavePreferences}
                   className="flex-1 py-3 bg-[#1f7a63] hover:bg-[#155744] text-white font-bold rounded-lg transition-colors shadow-lg"

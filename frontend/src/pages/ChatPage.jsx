@@ -1,24 +1,24 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import axios from "axios";
-import { auth, db } from '../config/firebase';
-import { collection, doc, getDocs, setDoc, deleteDoc, updateDoc, query, where } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { collection, doc, getDocs, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 
 // Split AI message content into main answer + follow-up suggestions
 function parseMessageContent(content) {
   // Catch all variations the AI might produce:
   // **Explore more:** / **Explore More:** / **Explore more** / ## Explore more: etc.
-  const markerRegex = /\n?\*\*[Ee]xplore\s+[Mm]ore[:\*]*\*?\*?:?\s*\n/;
+  const markerRegex = /\n?\*\*[Ee]xplore\s+[Mm]ore[:*]*\*?\*?:?\s*\n/;
   const match = markerRegex.exec(content);
   if (!match) return { main: content.trim(), suggestions: [] };
   const main = content.slice(0, match.index).trimEnd();
   const block = content.slice(match.index + match[0].length).trim();
   const suggestions = block
     .split('\n')
-    .map(l => l.replace(/^[•\-\*\d.]\s*/, '').trim())
+    .map((l) => l.replace(/^(?:[•*-]|\d+\.)\s*/, '').trim())
     .filter(Boolean);
   return { main, suggestions };
 }
@@ -137,7 +137,7 @@ export default function ChatPage() {
   }, [user?.id]);
 
   const currentSession = chatSessions.find(s => s.id === currentSessionId);
-  const messages = currentSession?.messages || [];
+  const messages = useMemo(() => currentSession?.messages || [], [currentSession]);
 
   const scrollToBottom = (force = false) => {
     if (!force && userScrolledUpRef.current) return;
@@ -347,7 +347,7 @@ export default function ChatPage() {
         sessionFinalRef.current = '';
         try {
           recognitionRef.current.start();
-        } catch (e) {
+        } catch {
           isListeningRef.current = false;
           setIsListening(false);
         }
@@ -510,13 +510,6 @@ export default function ChatPage() {
       setDisplayedText("");
       setIsLoading(false);
       scrollToBottom();
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
     }
   };
 
@@ -919,7 +912,7 @@ export default function ChatPage() {
                                   ol: ({children}) => <ol className="list-decimal pl-4 space-y-0.5 mb-1.5">{children}</ol>,
                                   li: ({children}) => <li className="leading-relaxed">{children}</li>,
                                   pre: ({children}) => <pre className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2 overflow-x-auto my-1.5">{children}</pre>,
-                                  code: ({node, inline, className, children}) => <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded font-mono text-[10px]">{children}</code>,
+                                  code: ({children}) => <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded font-mono text-[10px]">{children}</code>,
                                   blockquote: ({children}) => <blockquote className="border-l-2 border-[#1f7a63] pl-3 italic text-gray-600 dark:text-gray-400 my-1.5">{children}</blockquote>,
                                   a: ({children, href}) => <a href={href} className="text-[#1f7a63] dark:text-[#2dd4a1] underline hover:opacity-80" target="_blank" rel="noopener noreferrer">{children}</a>,
                                 }}
@@ -1002,7 +995,7 @@ export default function ChatPage() {
                   </div>
                   <p className="whitespace-pre-wrap leading-relaxed text-[11px] xs:text-xs sm:text-sm text-gray-800 dark:text-gray-200 wrap-break-word pl-4 xs:pl-5 sm:pl-7">
                     {(() => {
-                      const m = /\n?\*\*[Ee]xplore\s+[Mm]ore[:\*]*\*?\*?:?\s*\n/.exec(displayedText);
+                      const m = /\n?\*\*[Ee]xplore\s+[Mm]ore[:*]*\*?\*?:?\s*\n/.exec(displayedText);
                       return m ? displayedText.slice(0, m.index).trimEnd() : displayedText;
                     })()}
                     <span className="inline-block w-[2px] h-[1em] bg-[#1f7a63] dark:bg-[#2dd4a1] animate-pulse ml-0.5 align-middle" />

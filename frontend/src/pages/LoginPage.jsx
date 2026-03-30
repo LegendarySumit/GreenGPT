@@ -9,7 +9,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [showReset, setShowReset] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetStatus, setResetStatus] = useState({ type: "", message: "" });
+  const [resetLoading, setResetLoading] = useState(false);
+  const { login, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -32,6 +36,24 @@ export default function LoginPage() {
     }
 
     setLoading(false);
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setResetStatus({ type: "", message: "" });
+
+    if (!resetEmail) {
+      setResetStatus({ type: "error", message: "Please enter your email address." });
+      return;
+    }
+
+    setResetLoading(true);
+    const result = await resetPassword(resetEmail);
+    setResetStatus({
+      type: result.success ? "success" : "error",
+      message: result.message,
+    });
+    setResetLoading(false);
   };
 
   return (
@@ -173,10 +195,50 @@ export default function LoginPage() {
                 <input type="checkbox" className="w-4 h-4 text-[#1f7a63] bg-white/20 border-white/30 rounded focus:ring-[#2dd4a1]" />
                 <span className="ml-2 text-sm text-gray-300">Remember me</span>
               </label>
-              <a href="#" className="text-sm text-[#2dd4a1] hover:text-[#1f7a63] font-semibold transition-colors">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReset((prev) => !prev);
+                  setResetEmail(email || "");
+                  setResetStatus({ type: "", message: "" });
+                }}
+                className="text-sm text-[#2dd4a1] hover:text-[#1f7a63] font-semibold transition-colors"
+              >
                 Forgot password?
-              </a>
+              </button>
             </div>
+
+            {showReset && (
+              <div className="space-y-3 rounded-lg border border-white/20 bg-white/10 p-3">
+                <label className="block text-sm font-semibold text-white">
+                  Reset Password Email
+                </label>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-[#2dd4a1] focus:border-transparent focus:bg-white/20 outline-none transition-all"
+                />
+                {resetStatus.message && (
+                  <p
+                    className={`text-sm ${
+                      resetStatus.type === "success" ? "text-emerald-300" : "text-red-200"
+                    }`}
+                  >
+                    {resetStatus.message}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleResetPassword}
+                  disabled={resetLoading}
+                  className="w-full py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+                >
+                  {resetLoading ? "Sending..." : "Send Reset Link"}
+                </button>
+              </div>
+            )}
 
             <button
               type="submit"

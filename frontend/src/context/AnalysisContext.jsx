@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useRef } from "react";
+import { createContext, useContext, useState } from "react";
 
 const AnalysisContext = createContext(null);
 
@@ -16,7 +16,7 @@ const getStoredAnalysis = () => {
 };
 
 export function AnalysisProvider({ children }) {
-  const initialData = useRef(getStoredAnalysis()).current;
+  const initialData = getStoredAnalysis();
   const [analysisResult, setAnalysisResult] = useState(initialData.result);
   const [fileName, setFileName] = useState(initialData.fileName);
   const [fileSizeBytes, setFileSizeBytes] = useState(initialData.fileSizeBytes || 0);

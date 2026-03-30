@@ -6,6 +6,61 @@ import ResultCard from "../components/ResultCard";
 import { useAnalysis } from "../context/AnalysisContext";
 import { useAuth } from "../context/AuthContext";
 
+function SaveButton({ saveState, onSave }) {
+  if (saveState === "saved") {
+    return (
+      <button
+        disabled
+        className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base cursor-default"
+      >
+        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+        </svg>
+        Saved to History
+      </button>
+    );
+  }
+
+  if (saveState === "error") {
+    return (
+      <button
+        onClick={onSave}
+        className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
+      >
+        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+        </svg>
+        Save Failed - Retry
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={onSave}
+      disabled={saveState === "saving"}
+      className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-[#1f7a63] hover:bg-[#155744] disabled:opacity-70 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+    >
+      {saveState === "saving" ? (
+        <>
+          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+          </svg>
+          Saving...
+        </>
+      ) : (
+        <>
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h8a2 2 0 012 2v2H5V5zM3 9h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          </svg>
+          Save to History
+        </>
+      )}
+    </button>
+  );
+}
+
 export default function ResultsPage() {
   const navigate = useNavigate();
   const { analysisResult: result, fileName, fileSizeBytes, clearAnalysis } = useAnalysis();
@@ -49,59 +104,6 @@ export default function ResultsPage() {
     }
   };
 
-  const SaveButton = () => {
-    if (saveState === "saved") {
-      return (
-        <button
-          disabled
-          className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base cursor-default"
-        >
-          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          Saved to History
-        </button>
-      );
-    }
-    if (saveState === "error") {
-      return (
-        <button
-          onClick={handleSave}
-          className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
-        >
-          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-          </svg>
-          Save Failed — Retry
-        </button>
-      );
-    }
-    return (
-      <button
-        onClick={handleSave}
-        disabled={saveState === "saving"}
-        className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-[#1f7a63] hover:bg-[#155744] disabled:opacity-70 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
-      >
-        {saveState === "saving" ? (
-          <>
-            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-            </svg>
-            Saving...
-          </>
-        ) : (
-          <>
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h8a2 2 0 012 2v2H5V5zM3 9h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-            </svg>
-            Save to History
-          </>
-        )}
-      </button>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6 sm:py-8 transition-colors duration-300">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
@@ -124,7 +126,7 @@ export default function ResultsPage() {
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             {/* Save to History */}
-            <SaveButton />
+            <SaveButton saveState={saveState} onSave={handleSave} />
 
             {/* New Analysis */}
             <button

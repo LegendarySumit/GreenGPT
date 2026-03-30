@@ -5,11 +5,13 @@ import { useAuth } from "../context/AuthContext";
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, updatePlan } = useAuth();
+  const params = new URLSearchParams(window.location.search);
+  const shouldOpenCaseStudies = params.get('openCaseStudies') === 'true';
   const [currentSlide, setCurrentSlide] = useState(0);
   const [selectedCaseStudy, setSelectedCaseStudy] = useState(null);
   const [selectedGalleryImage, setSelectedGalleryImage] = useState(null);
-  const [showCaseStudySelector, setShowCaseStudySelector] = useState(false);
+  const [showCaseStudySelector, setShowCaseStudySelector] = useState(shouldOpenCaseStudies);
   const [showGallerySelector, setShowGallerySelector] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -30,26 +32,25 @@ export default function LandingPage() {
     return () => window.removeEventListener('resize', updateItemsPerSlide);
   }, []);
 
-  const handlePlanSelection = (planName, planPrice) => {
-    if (isAuthenticated()) {
-      // Save selected tier to localStorage
-      localStorage.setItem('selectedTier', JSON.stringify({ name: planName, price: planPrice }));
+  const handlePlanSelection = async (planId, planName, planPrice) => {
+    if (!isAuthenticated()) {
+      navigate('/signup');
+      return;
+    }
+
+    const result = await updatePlan(planId);
+    if (result.success) {
       setSelectedPlan({ name: planName, price: planPrice });
       setShowSuccessModal(true);
-    } else {
-      navigate('/signup');
     }
   };
 
-  // Check URL parameters on mount to open case studies modal
+  // Clean up URL after opening the case-study selector from the query flag.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('openCaseStudies') === 'true') {
-      setShowCaseStudySelector(true);
-      // Clean up URL
+    if (shouldOpenCaseStudies) {
       window.history.replaceState({}, '', '/');
     }
-  }, []);
+  }, [shouldOpenCaseStudies]);
 
   const successStories = [
     {
@@ -592,6 +593,7 @@ export default function LandingPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[
               {
+                id: "free_trial",
                 name: "Free Trial",
                 price: "$0",
                 period: "7 days",
@@ -607,6 +609,7 @@ export default function LandingPage() {
                 popular: false
               },
               {
+                id: "individual",
                 name: "Individual",
                 price: "$49",
                 period: "month",
@@ -624,6 +627,7 @@ export default function LandingPage() {
                 popular: true
               },
               {
+                id: "team",
                 name: "Organization",
                 price: "$299",
                 period: "month",
@@ -695,7 +699,7 @@ export default function LandingPage() {
 
                     {/* CTA Button */}
                     <button
-                      onClick={() => handlePlanSelection(plan.name, plan.price)}
+                      onClick={() => handlePlanSelection(plan.id, plan.name, plan.price)}
                       className={`block w-full py-3 rounded-xl font-semibold text-center text-sm transition-all duration-300 transform group-hover:scale-105 ${
                         plan.popular
                           ? 'bg-gradient-to-r from-[#1f7a63] to-[#2dd4a1] hover:from-[#2dd4a1] hover:to-[#1f7a63] text-white shadow-lg hover:shadow-xl'

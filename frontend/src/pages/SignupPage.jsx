@@ -10,7 +10,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signup, signupWithGoogle } = useAuth();
+  const { signup } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -30,7 +30,7 @@ export default function SignupPage() {
       return;
     }
 
-    const result = await signup(name, email, password);
+    const result = await signup(email, password, name);
 
     if (result.success) {
       navigate("/dashboard");

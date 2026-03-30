@@ -1,9 +1,19 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Dashboard() {
   const [email, setEmail] = useState("");
+  const { user } = useAuth();
+
+  const quotaSummary = user?.remaining
+    ? [
+        { label: "Analyze Remaining", value: user.remaining.analyze === null ? "Unlimited" : String(user.remaining.analyze) },
+        { label: "Chat Remaining", value: user.remaining.chat === null ? "Unlimited" : String(user.remaining.chat) },
+        { label: "Upload Remaining", value: user.remaining.upload === null ? "Unlimited" : String(user.remaining.upload) },
+      ]
+    : [];
 
   const recentAnalyses = [
     { 
@@ -220,6 +230,17 @@ export default function Dashboard() {
             </motion.div>
           ))}
         </div>
+
+        {quotaSummary.length > 0 && (
+          <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {quotaSummary.map((item) => (
+              <div key={item.label} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+                <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{item.label}</p>
+                <p className="mt-1 text-xl font-semibold text-gray-900 dark:text-white">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5 lg:gap-6 mb-6 sm:mb-8">
