@@ -10,17 +10,6 @@
 ![Gemini](https://img.shields.io/badge/Google-Gemini_2.5-4285F4?logo=google&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Production_Ready-success)
 
-### Deployment & CI/CD
-Backend CI/CD: https://github.com/LegendarySumit/GreenGPT/actions/workflows/ci-backend.yml
-Frontend CI/CD: https://github.com/LegendarySumit/GreenGPT/actions/workflows/ci-frontend.yml
-Security Scan: https://github.com/LegendarySumit/GreenGPT/actions/workflows/security-scan.yml
-Health Check: https://github.com/LegendarySumit/GreenGPT/actions/workflows/health-check.yml
-
-### Live Deployment
-🚀 Frontend: https://greengpt.vercel.app  
-🔧 API: https://greengpt-backend.onrender.com  
-📊 Health Check: https://greengpt-backend.onrender.com/api/ready
-
 *Transform complex environmental data into actionable insights in 30 seconds*
 
 [Features](#-features) • [How It Works](#-how-greengpt-works) • [Tech Stack](#-tech-stack) • [Getting Started](#-getting-started) • [Deployment](#deployment-guide) • [Security](#security-and-compliance) • [Contributing](#contributing)
