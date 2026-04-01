@@ -14,9 +14,9 @@ export const protect = async (req, res, next) => {
 
     const authHeader = req.headers.authorization;
     if (typeof authHeader === 'string') {
-      const [scheme, credentials] = authHeader.trim().split(/\s+/, 2);
-      if (scheme === 'Bearer' && credentials) {
-        token = credentials;
+      const match = authHeader.trim().match(/^Bearer\s+([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/);
+      if (match) {
+        [, token] = match;
       }
     }
 

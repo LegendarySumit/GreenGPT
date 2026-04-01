@@ -29,12 +29,12 @@ const ALLOWED_MIME_EXTENSIONS = {
 };
 
 const router = express.Router();
-const chatRateLimit = rateLimit({
+const chatRateLimitConfig = {
   windowMs: Number(process.env.CHAT_RATE_WINDOW_MS || 60_000),
   limit: Number(process.env.CHAT_RATE_MAX || 120),
   standardHeaders: true,
   legacyHeaders: false,
-});
+};
 
 const sanitizeFilename = (originalName = 'file') => {
   const ext = path.extname(originalName).toLowerCase();
@@ -154,7 +154,7 @@ async function analyzeVideo(filePath) {
 }
 
 // Upload endpoint
-router.post('/upload', protect, chatRateLimit, enforceQuota('upload'), upload.single('file'), async (req, res) => {
+router.post('/upload', rateLimit(chatRateLimitConfig), protect, enforceQuota('upload'), upload.single('file'), async (req, res) => {
   let filePath;
   try {
     if (!req.file) {
@@ -207,7 +207,7 @@ router.post('/upload', protect, chatRateLimit, enforceQuota('upload'), upload.si
 });
 
 // Chat message endpoint
-router.post('/message', protect, chatRateLimit, enforceQuota('chat'), validateChatPayload, async (req, res) => {
+router.post('/message', rateLimit(chatRateLimitConfig), protect, enforceQuota('chat'), validateChatPayload, async (req, res) => {
   try {
     const { message, files, conversationHistory } = req.body;
 
@@ -359,7 +359,7 @@ Answer the question above concisely and directly (or give the off-topic refusal 
 });
 
 // SSE streaming chat endpoint — sends tokens as they're generated
-router.post('/stream', protect, chatRateLimit, enforceQuota('chat'), validateChatPayload, async (req, res) => {
+router.post('/stream', rateLimit(chatRateLimitConfig), protect, enforceQuota('chat'), validateChatPayload, async (req, res) => {
   const { message, files, conversationHistory } = req.body;
 
   // Build context from uploaded files (same as /message)

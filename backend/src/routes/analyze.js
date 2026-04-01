@@ -14,12 +14,12 @@ import { sendError } from "../utils/apiResponse.js";
 
 const router = express.Router();
 const MAX_ANALYZE_FILE_BYTES = Number(process.env.MAX_ANALYZE_FILE_BYTES || 50 * 1024 * 1024);
-const analyzeRateLimit = rateLimit({
+const analyzeRateLimitConfig = {
   windowMs: Number(process.env.ANALYZE_RATE_WINDOW_MS || 60_000),
   limit: Number(process.env.ANALYZE_RATE_MAX || 40),
   standardHeaders: true,
   legacyHeaders: false,
-});
+};
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_ANALYZE_FILE_BYTES, files: 1 },
@@ -33,16 +33,16 @@ const upload = multer({
 });
 
 // POST /api/analyze       — run AI analysis (auth required)
-router.post("/", protect, analyzeRateLimit, enforceQuota("analyze"), upload.single("file"), analyzeDocument);
+router.post("/", rateLimit(analyzeRateLimitConfig), protect, enforceQuota("analyze"), upload.single("file"), analyzeDocument);
 
 // POST /api/analyze/save  — manually save a result to history
-router.post("/save", protect, analyzeRateLimit, validateAnalyzeSavePayload, saveAnalysis);
+router.post("/save", rateLimit(analyzeRateLimitConfig), protect, validateAnalyzeSavePayload, saveAnalysis);
 
 // GET  /api/analyze/history — fetch all saved analyses for the user
-router.get("/history", protect, analyzeRateLimit, getAnalysisHistory);
+router.get("/history", rateLimit(analyzeRateLimitConfig), protect, getAnalysisHistory);
 
 // DELETE /api/analyze/history/:id — delete a specific saved analysis
-router.delete("/history/:id", protect, analyzeRateLimit, deleteAnalysis);
+router.delete("/history/:id", rateLimit(analyzeRateLimitConfig), protect, deleteAnalysis);
 
 router.use((err, req, res, next) => {
   if (err?.message === "Only PDF files are supported") {
