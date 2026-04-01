@@ -10,22 +10,11 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    let token;
-
     const authHeader = req.headers.authorization;
-    if (typeof authHeader === 'string') {
-      const match = authHeader.trim().match(/^Bearer\s+([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/);
-      if (match) {
-        [, token] = match;
-      }
-    }
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized to access this route'
-      });
-    }
+    const tokenMatch = typeof authHeader === 'string'
+      ? authHeader.trim().match(/^Bearer\s+([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/)
+      : null;
+    const token = tokenMatch?.[1] || '__invalid_token__';
 
     try {
       // Verify Firebase ID token
