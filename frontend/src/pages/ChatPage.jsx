@@ -7,6 +7,20 @@ import { db } from '../config/firebase';
 import { collection, doc, getDocs, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 
+const generateSecureId = () => {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  if (typeof globalThis.crypto?.getRandomValues !== 'function') {
+    throw new Error('Secure random generator is unavailable in this browser');
+  }
+
+  const bytes = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+};
+
 // Split AI message content into main answer + follow-up suggestions
 function parseMessageContent(content) {
   // Catch all variations the AI might produce:
@@ -111,7 +125,7 @@ export default function ChatPage() {
         if (chats.length === 0) {
           // Create initial empty chat if none exist
           const newChat = {
-            id: Date.now().toString(),
+            id: generateSecureId(),
             title: "New Chat",
             messages: [
               {
@@ -205,8 +219,7 @@ export default function ChatPage() {
 
   // Create new chat session
   const createNewChat = () => {
-    // Use timestamp-based string ID (same as initial chat creation)
-    const newId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const newId = generateSecureId();
     const newSession = {
       id: newId,
       title: "New Chat",

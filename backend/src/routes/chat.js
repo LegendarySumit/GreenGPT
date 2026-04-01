@@ -1,5 +1,6 @@
 import express from 'express';
 import multer from 'multer';
+import rateLimit from 'express-rate-limit';
 import pdfParse from 'pdf-parse';
 import fs from 'fs/promises';
 import path from 'path';
@@ -7,7 +8,6 @@ import { fileURLToPath } from 'url';
 import { generateText, generateContentWithImage, streamContent } from '../config/gemini.js';
 import { protect } from '../middleware/auth.js';
 import { validateChatPayload } from '../middleware/validation.js';
-import { createRateLimit } from '../middleware/rateLimit.js';
 import { enforceQuota } from '../middleware/quota.js';
 import { sendError, sendSuccess } from '../utils/apiResponse.js';
 import { hashUserId, logError, logWarn } from '../utils/logging.js';
@@ -29,10 +29,11 @@ const ALLOWED_MIME_EXTENSIONS = {
 };
 
 const router = express.Router();
-const chatRateLimit = createRateLimit({
+const chatRateLimit = rateLimit({
   windowMs: Number(process.env.CHAT_RATE_WINDOW_MS || 60_000),
-  userMax: Number(process.env.CHAT_RATE_USER_MAX || 80),
-  ipMax: Number(process.env.CHAT_RATE_IP_MAX || 120),
+  limit: Number(process.env.CHAT_RATE_MAX || 120),
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 const sanitizeFilename = (originalName = 'file') => {
@@ -57,6 +58,18 @@ const isAllowedUpload = (file) => {
 
 const ensureUploadDir = async () => {
   await fs.mkdir(UPLOAD_DIR, { recursive: true });
+};
+
+const resolveSafeUploadPath = (filename) => {
+  const safeFilename = path.basename(String(filename || ''));
+  const resolvedPath = path.resolve(UPLOAD_DIR, safeFilename);
+  const resolvedUploadDir = path.resolve(UPLOAD_DIR);
+
+  if (!resolvedPath.startsWith(`${resolvedUploadDir}${path.sep}`)) {
+    throw new Error('Invalid upload path');
+  }
+
+  return resolvedPath;
 };
 
 const pruneExpiredUploads = async () => {
@@ -152,7 +165,7 @@ router.post('/upload', protect, chatRateLimit, enforceQuota('upload'), upload.si
       });
     }
 
-    filePath = req.file.path;
+    filePath = resolveSafeUploadPath(req.file.filename);
     const fileType = req.file.mimetype;
     let content = '';
 

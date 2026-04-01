@@ -7,7 +7,6 @@
 
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -186,7 +185,6 @@ function checkFirebaseConnection() {
     }
 
     console.log(`✅ Firebase service account structure valid`);
-    console.log(`   Project: ${config.project_id}`);
     return true;
   } catch (err) {
     console.log(`⚠️  Could not parse FIREBASE_SERVICE_ACCOUNT: ${err.message}`);
