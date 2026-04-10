@@ -19,6 +19,13 @@ const normalizeAnalyzeError = (error) => {
   const { status: baseStatus, message: baseMessage } = toHttpError(error, "AI analysis failed");
   const message = baseMessage || "AI analysis failed";
 
+  if (/not configured/i.test(message)) {
+    return {
+      status: 503,
+      message: "AI service is not configured. Please contact support.",
+    };
+  }
+
   if (/No response from AI/i.test(message)) {
     return {
       status: 502,
@@ -57,6 +64,12 @@ export const analyzeDocument = async (req, res) => {
       });
     }
 
+    logInfo("analyze_document_started", {
+      requestId: req.requestId,
+      fileSize: req.file.size,
+      userHash: hashUserId(req.user?.id),
+    });
+
     const text = await extractTextFromPDF(req.file.buffer);
     const normalizedText = normalizeExtractedText(text);
     const truncatedText = normalizedText.substring(0, ANALYZE_MAX_TEXT_CHARS);
@@ -82,12 +95,22 @@ export const analyzeDocument = async (req, res) => {
         break;
       } catch (error) {
         lastError = error;
+        logError(`analyze_attempt_${attempt}_failed`, error, {
+          requestId: req.requestId,
+          userHash: hashUserId(req.user?.id),
+          attempt,
+        });
       }
     }
 
     if (!analysis) {
       throw lastError || new Error("No response from AI");
     }
+
+    logInfo("analyze_document_completed", {
+      requestId: req.requestId,
+      userHash: hashUserId(req.user?.id),
+    });
 
     return sendSuccess(res, { analysis });
   } catch (error) {
@@ -96,6 +119,8 @@ export const analyzeDocument = async (req, res) => {
     logError("analyze_document_failed", error, {
       requestId: req.requestId,
       userHash: hashUserId(req.user?.id),
+      status,
+      errorMessage: error?.message || "unknown error",
     });
     return sendError(res, {
       status,
