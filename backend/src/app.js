@@ -82,7 +82,7 @@ const cspConnectSources = ["'self'", ...allowedOrigins];
 
 app.use(
   helmet({
-    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+    crossOriginOpenerPolicy: { policy: "unsafe-none" },
     contentSecurityPolicy: {
       useDefaults: true,
       directives: {
