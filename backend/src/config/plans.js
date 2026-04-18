@@ -9,7 +9,7 @@ export const PLAN_LIMITS = {
   [PLAN_IDS.FREE]: {
     name: "Free Trial",
     quotas: {
-      analyze: 5,
+      analyze: 50,
       chat: 300,
       upload: 20,
     },
