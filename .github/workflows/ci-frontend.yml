@@ -157,7 +157,6 @@ jobs:
           node-version: 20.x
 
       - name: Deploy to Vercel Preview
-        working-directory: frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -182,7 +181,6 @@ jobs:
           node-version: 20.x
 
       - name: Deploy to Vercel Production
-        working-directory: frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
