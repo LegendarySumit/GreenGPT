@@ -109,8 +109,15 @@ export default function HistoryPage() {
     setDeletingId(null);
   };
 
-  const counts   = history.reduce((acc, h) => { acc[h.riskLevel] = (acc[h.riskLevel] || 0) + 1; return acc; }, {});
-  const filtered = filter === "All" ? history : history.filter((h) => h.riskLevel === filter);
+  const counts   = history.reduce((acc, h) => {
+    const normalized = (h.riskLevel || "Low").charAt(0).toUpperCase() + (h.riskLevel || "Low").slice(1).toLowerCase();
+    acc[normalized] = (acc[normalized] || 0) + 1;
+    return acc;
+  }, {});
+  const filtered = filter === "All" ? history : history.filter((h) => {
+    const normalized = (h.riskLevel || "Low").charAt(0).toUpperCase() + (h.riskLevel || "Low").slice(1).toLowerCase();
+    return normalized === filter;
+  });
   const FILTERS  = ["All", "High", "Medium", "Low"];
 
   return (
@@ -241,7 +248,8 @@ export default function HistoryPage() {
             <div className="space-y-3 pr-1">
               <AnimatePresence initial={false}>
                 {filtered.map((item, i) => {
-                  const risk       = item.riskLevel || "Low";
+                  const riskRaw    = item.riskLevel || "Low";
+                  const risk       = riskRaw.charAt(0).toUpperCase() + riskRaw.slice(1).toLowerCase();
                   const cfg        = RISK_CONFIG[risk] || RISK_CONFIG.Low;
                   const isDeleting = deletingId === item.id;
 

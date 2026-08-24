@@ -17,12 +17,18 @@ export const protect = async (req, res, next) => {
     const token = tokenMatch?.[1] || '__invalid_token__';
 
     try {
-      // Verify Firebase ID token
-      const decodedToken = await adminAuth.verifyIdToken(token);
+      // Verify Firebase ID token with timeout
+      const decodedToken = await Promise.race([
+        adminAuth.verifyIdToken(token),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase token verification timeout')), 8000))
+      ]);
       
       // Check if user exists in Firestore (must have signed up)
       const userRef = adminDb.collection('users').doc(decodedToken.uid);
-      const userDocSnap = await userRef.get();
+      const userDocSnap = await Promise.race([
+        userRef.get(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore query timeout')), 5000))
+      ]);
       
       if (!userDocSnap.exists) {
         return res.status(401).json({

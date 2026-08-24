@@ -81,8 +81,8 @@ export const generateContent = async (prompt, configOverride = {}) => {
         {
           contents: [
             {
-              parts: [{ text: prompt }]
-            }
+              parts: [{ text: prompt }],
+            },
           ],
           generationConfig: {
             temperature: 0.2,
@@ -94,7 +94,7 @@ export const generateContent = async (prompt, configOverride = {}) => {
         },
         {
           headers: { "Content-Type": "application/json" },
-          timeout: 60000 // 60 second timeout
+          timeout: 90000 // 90 second timeout
         }
       );
 

@@ -16,7 +16,7 @@ import { hashUserId, logError, logInfo } from "./utils/logging.js";
 const app = express();
 
 const isProduction = process.env.NODE_ENV === "production";
-const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 120000);
+const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 180000); // 3 minutes
 const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || "1mb";
 const requestIdHeader = "x-request-id";
 const globalRateLimit = createRateLimit({
@@ -82,7 +82,6 @@ const cspConnectSources = ["'self'", ...allowedOrigins];
 
 app.use(
   helmet({
-    crossOriginOpenerPolicy: { policy: "unsafe-none" },
     contentSecurityPolicy: {
       useDefaults: true,
       directives: {
