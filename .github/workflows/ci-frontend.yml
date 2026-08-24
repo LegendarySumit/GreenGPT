@@ -165,7 +165,7 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          vercel --token=$VERCEL_TOKEN frontend
+          cd frontend && vercel --token=$VERCEL_TOKEN
 
   deploy-production:
     name: Deploy to Vercel Production
@@ -193,4 +193,4 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          vercel --token=$VERCEL_TOKEN frontend --prod
+          cd frontend && vercel --token=$VERCEL_TOKEN --prod
