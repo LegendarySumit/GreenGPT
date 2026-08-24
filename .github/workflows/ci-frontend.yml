@@ -145,39 +145,28 @@ jobs:
     name: Deploy to Vercel Preview
     runs-on: ubuntu-latest
     needs: [build]
-    if: |
-      github.event_name == 'pull_request'
-    environment:
-      name: preview
-      url: ${{ steps.deploy.outputs.preview_url }}
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check Vercel secrets
-        id: vercel_secrets
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Deploy to Vercel Preview
+        working-directory: frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-            echo "✅ Vercel secrets configured"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Vercel secrets missing, skipping preview deploy"
-          fi
-
-      - name: Deploy to Vercel Preview
-        if: steps.vercel_secrets.outputs.ready == 'true'
-        id: deploy
-        uses: amondnet/vercel-action@v26
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          scope: ${{ secrets.VERCEL_ORG_ID }}
+          vercel --token=$VERCEL_TOKEN
 
   deploy-production:
     name: Deploy to Vercel Production
@@ -186,47 +175,24 @@ jobs:
     if: |
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main'
-    environment:
-      name: production
-      url: https://greengpt.vercel.app
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check Vercel secrets
-        id: vercel_secrets
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Deploy to Vercel Production
+        working-directory: frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-            echo "✅ Vercel secrets configured"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Vercel secrets missing, skipping production deploy"
-          fi
-
-      - name: Deploy to Vercel Production
-        if: steps.vercel_secrets.outputs.ready == 'true'
-        uses: amondnet/vercel-action@v26
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: --prod
-          scope: ${{ secrets.VERCEL_ORG_ID }}
-
-      - name: Notify deployment success
-        if: success() && steps.vercel_secrets.outputs.ready == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '✅ Frontend deployed to production on Vercel!'
-            })
-        continue-on-error: true
+          vercel --token=$VERCEL_TOKEN --prod
