@@ -172,7 +172,7 @@ jobs:
       - name: Deploy to Vercel Preview
         if: steps.vercel_secrets.outputs.ready == 'true'
         id: deploy
-        uses: amondnet/vercel-action@latest
+        uses: amondnet/vercel-action@v26
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -210,7 +210,7 @@ jobs:
 
       - name: Deploy to Vercel Production
         if: steps.vercel_secrets.outputs.ready == 'true'
-        uses: amondnet/vercel-action@latest
+        uses: amondnet/vercel-action@v26
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
