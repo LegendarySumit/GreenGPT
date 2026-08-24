@@ -3,7 +3,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "public": false,
   "rewrites": [
     {
       "source": "/:path((?!api).*)",
