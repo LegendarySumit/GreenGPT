@@ -1,4 +1,12 @@
 export default function ResultCard({ data }) {
+  const normalizeRiskLevel = (level) => {
+    if (!level) return 'Low';
+    const normalized = String(level).toLowerCase();
+    if (normalized === 'high') return 'High';
+    if (normalized === 'medium') return 'Medium';
+    return 'Low';
+  };
+
   const getRiskConfig = (level) => {
     const configs = {
       High: {
@@ -35,7 +43,8 @@ export default function ResultCard({ data }) {
     return configs[level] || configs.Low;
   };
 
-  const risk = getRiskConfig(data.risk_level);
+  const normalizedRiskLevel = normalizeRiskLevel(data.risk_level);
+  const risk = getRiskConfig(normalizedRiskLevel);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -43,7 +52,7 @@ export default function ResultCard({ data }) {
       <div className={`${risk.bg} ${risk.border} border rounded-lg px-4 py-2.5 inline-flex items-center gap-2`}>
         <span className={risk.color}>{risk.icon}</span>
         <span className={`text-sm font-bold ${risk.color}`}>
-          {data.risk_level} Risk Level
+          {normalizedRiskLevel} Risk Level
         </span>
       </div>
 
